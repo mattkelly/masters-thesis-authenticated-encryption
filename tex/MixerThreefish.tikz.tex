@@ -1,0 +1,31 @@
+\begin{tikzpicture}[ultra thick,>=latex]
+% Reference grid (temporary)
+%\draw[help lines] (0,0) grid (16,16);
+
+% Inputs A and B
+\drawMixerInputs
+\draw[->] (1,15) to (1,14);
+\draw[->] (5,15) to (5,12);
+
+% Modular addition
+\drawAdder{0.5}{14}
+
+% Right adder input
+\draw[->] (5,13.5) to (1.5,13.5);
+
+% Rotation
+\drawRot{5}{11.5}
+
+% XOR
+\drawXOR{5}{8.5}
+
+% XOR inputs
+\draw[->] (1,8.5) to (4.55,8.5);
+\draw[->] (5,11.05) to (5,8.95);
+
+% Outputs A' and B'
+\draw[->] (1,14) to (1,6);
+\draw[->] (5,8.05) to (5,6);
+\drawMixerOutputs{10}
+
+\end{tikzpicture}

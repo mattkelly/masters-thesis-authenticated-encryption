@@ -1,0 +1,315 @@
+%------------------------------
+% CHAPTER: Statistical Testing
+%------------------------------
+\chapter{Statistical Testing}
+\label{ch:StatisticalTesting}
+In addition to the previously described cryptanalysis techniques, it can be insightful to analyze the output of a cryptosystem purely on a statistical basis.
+Two methods of statistical testing were explored here: using the NIST Statistical Tool Suite for randomness testing, and creating our own tool to check that we meet the avalanche criterion.
+Both of these methods help provide evidence that the system behaves randomly.
+However, they are certainly not a replacement for the previously described cryptanalysis techniques.
+
+\section{NIST STS Testing}
+\subsection{Overview}
+NIST created and maintains the Statistical Tool Suite (STS) for randomness testing of binary data \cite{NIST2010_STS}.
+While its primary purpose is for testing random and pseudorandom number generators, it can be applied to general symmetric key cryptosystem testing if proper measures are taken.
+For example, Soto (in affiliation with NIST) used an earlier version of the STS in 1999 to analyze the AES candidates \cite{NIST1999_AES_STS_Testing}.
+
+The STS requires very long bitstrings as input in order to ensure valid results. 
+The NIST recommendation is at least $55$ bitstrings each of length $2^{20}$ bits ($1$ Mb) for most tests in the suite.
+Because block ciphers such as the AES candidates have small, fixed length outputs, Soto had to concatenate many ``derived'' output blocks together to form one input bitstring for the STS.
+The derived blocks come from using the block cipher, for example, in various modes of operation such as CBC.
+The validity of this method is debatable since the STS ends up testing the mode of operation of the block cipher rather than the block cipher itself.
+A better statistical test for block ciphers and other symmetric key cryptosystems with fixed length outputs would be the coincidence test based on a Bayesian approach as described by Kaminsky in \cite{Kaminsky2013_CoincidenceTest}.
+
+For this reason, we chose a different method to generate STS inputs. 
+Because the STS is intended for random and pseudorandom number generators, we used the sponge construction in the keystream generation mode detailed in Section~\ref{sec:SpongeApplications}. 
+We absorb a $128$-bit key (with no IV, for simplicity) and squeeze out $1$ Mb of keystream material.
+This is very similar to a pseudorandom number generator because a good keystream generator will behave as a cryptographically secure pseudorandom bitstream generator.
+While this does not directly test the duplex construction, we remind the reader that the duplex construction can be reduced to the sponge construction as shown in Section~\ref{sec:DuplexSecurity}.
+Therefore we believe that this is the best method to use the NIST STS for statistical testing of our cryptosystem.
+
+There is one input file generated for every number of rounds up to the maximum of $16$.
+Each input file consists of $128$ bitstrings, each of which is acquired by flipping a unique bit of the key and squeezing as previously described.
+
+\subsection{STS Test Descriptions}
+The NIST STS runs a battery of $15$ different tests on an input file in an attempt to discover any non-random behavior.
+We very briefly describe those tests here. 
+Interested readers may refer to \cite{NIST2010_STS} for a much more in-depth description of each test.
+
+\begin{enumerate}
+\item \textbf{Frequency:} 
+Determines whether the number of ones and zeros in a bitstring is approximately the same as it would be for a truly random bitstring.
+All subsequent tests rely on the passing of this test.
+
+\item \textbf{Block Frequency:} 
+Determines whether the number of ones and zeros in $M$-bit blocks of a bitstring is approximately the same as it would be for a truly random bitstring.
+We use the default recommended value for our input size: $M = 128$. 
+
+\item \textbf{Runs:} 
+Determines whether the number of runs of ones and zeros of various length is approximately the same as it would be for a truly random bitstring.
+A run is an uninterrupted sequence of identical bits.
+
+\item \textbf{Longest Run of Ones in a Block:} 
+Determines whether the longest run of ones in $M$-bit blocks of a bitstring is approximately the same as it would be for a truly random bitstring.
+(A deviation from random for longest run of ones also indicates a deviation for longest run of zeros, thus only one test is needed.)
+The preset value for $M$ is $10^4$ for bitstrings of length greater than $750,000$; this is what we use.
+
+\item \textbf{Binary Matrix Rank:} 
+Determines whether the linear independence (i.e.\ rank) of disjoint $M \times Q$ matrices built from an input bitstring is approximately the same as it would be for a truly random bitstring.
+The preset values $M = Q = 32$ are used.
+
+\item \textbf{Discrete Fourier Transform (Spectral):} 
+Determines whether the spectral frequency of a bitstring is approximately the same as it would be for a truly random bitstring.
+
+\item \textbf{Non-Overlapping Template Matching:} 
+Determines whether the number of occurrences of an $m$-bit aperiodic pattern within a bitstring is approximately the same as it would be for a truly random bitstring.
+Patterns are not allowed to overlap.
+We use the default recommended value for our input size: $m = 9$.
+This test is actually comprised of $148$ separate tests for different preset patterns.
+
+\item \textbf{Overlapping Template Matching:} 
+Determines whether the number of occurrences of an $m$-bit all-one pattern within a bitstring is approximately the same as it would be for a truly random bitstring.
+The pattern may overlap.
+We use the default recommended value for our input size: $m = 9$.
+
+\item \textbf{Maurer's ``Universal Statistical'' Test:} 
+Determines whether the achievable level of compression of a bitstring is approximately the same as it would be for a truly random bitstring.
+A bitstring that can be compressed significantly is considered to exhibit non-random behavior.
+
+\item \textbf{Linear Complexity:} 
+Determines whether the length of a Linear Feedback Shift Register (LFSR) that adequately models $M$-bit blocks in a bitstring is approximately the same as it would be for a truly random bitstring.
+A block that can be adequately modeled by a small LFSR is considered to exhibit non-random behavior.
+We use the default recommended value for our input size: $M = 500$.
+
+\item \textbf{Serial:} 
+Determines whether the frequency of \emph{all} possible overlapping $m$-bit patterns is appoximately the same as it would be for a truly random bitstring.
+Note that for $m = 1$, this is equivalent to the previously described Frequency test.
+We use the default recommended value for our input size: $m = 16$.
+
+\item \textbf{Approximate Entropy:} 
+Determines whether the frequency of all possible $m$- and $(m+1)$-bit patterns is approximately the same as it would be for a truly random bitstring.
+We use the default recommended value for our input size: $m = 10$.
+
+\item \textbf{Cumulative Sums (Cusums):} 
+Determines whether the (forward and reverse) cumulative sums of a bitstring are approximately the same as they would be for a truly random bitstring.
+A cumulative sum that is too large or small indicates too many ones or zeros in the early (for forward) or late (for reverse) stages of the bitstring.
+
+\item \textbf{Random Excursions:} 
+Determines whether the distribution of the number of visits of a one-dimensional random walk to a certain state is approximately the same as it would be for a truly random bitstring.
+This test is actually comprised of eight separate tests, one for each of the states in $[-4,-1] \cup [+1,+4]$.
+
+\item \textbf{Random Excursions Variant:} 
+Determines whether the distribution of the number of visits across many one-dimensional random walks to a certain state is approximately the same as it would be for a truly random bitstring.
+This test is actually comprised of $18$ separate tests, one for each of the states in $[-9,-1] \cup [+1,+9]$.
+\end{enumerate}
+
+To interpret the results of each test, one needs to understand some very basic probability theory. 
+The \emph{null hypothesis} is the hypothesis that there exists no statistical significance in a given set of observations.
+We \emph{accept} or \emph{reject} the null hypothesis based on the results of each test on each bitstring.
+For our purposes, accepting the null hypothesis means that the bitstream in question exhibits no significant non-random behavior; this is what we desire.
+Each STS test outputs a \pval (between $0$ and $1$) that summarizes the strength of the evidence against the null hypothesis. 
+It indicates the probability that a perfectly random bitstring would have produced a sequence less random than the one under test.
+For example, if a test returns a \pval of $1$, then the bitstring under test exhibits perfect randomness.
+
+In order to translate this to a pass/fail test, we must choose a \emph{significance level}, denoted $\alpha$, such that if $\pval \ge \alpha$ then the null hypothesis is accepted.
+We use the default NIST-recommended value of $\alpha = .01$ here.
+This means that an acceptance of the null hypothesis has a $99\%$ confidence level.
+In other words, we expect that one out of every $100$ truly random bitstrings is falsely rejected.
+
+\subsection{Results}
+NIST recommends two approaches for interpreting the results of a statistical test for all bitstrings in an input file. 
+The first is based on the proportion of \pvals which pass (i.e.\ for which the null hypothesis is accepted for that bitstring). 
+The STS directly provides support for this.
+The second is based on the distribution of \pvals.
+The STS provides some support for this, but further work is needed to come up with an overall pass/fail result for each test. 
+For this, we wrote the script provided in Section~\ref{sec:UniformityTestCode}.
+
+\subsubsection{\pval Proportions}
+The first method of interpreting test results for an entire input file is based on the proportion of bitstrings that generate \pvals which pass the test.
+Acceptable proportions are given by the confidence interval
+\begin{equation*}
+\hat{p} \pm 3 \sqrt{ \frac{\hat{p}(1-\hat{p})}{m} },
+\end{equation*}
+where $\hat{p} = 1 - \alpha = 0.99$ and $m = 128$ is the sample size.
+In our case, the lower bound on the confidence interval is approximately $0.9636$. 
+If a proportion is below this, the test on that input file fails.
+The Random Excursions Variant test does not always use all $m = 128$ inputs it is given and thus the lower bound may be decreased in some cases.
+The details behind this are considered out of scope of this thesis. However, we do note that the minimum lower bound for this particular test occurs at approximately $0.9576$ when $m = 66$ is used.
+
+We present in Table~\ref{tab:PvalProportionResults} the pass/fail results for every number of rounds up to the maximum of $16$ as provided directly by the NIST STS output.
+If a test failed, we indicate which test it was and the corresponding \pval.
+For tests which consist of numerous subtests, we list exactly which test failed.
+For example, a failed Non-Overlapping Template test includes the template number.
+A failed Random Excursion (Variant) test includes the state it failed on.
+
+\begin{table}[p]
+\centering
+\begin{tabular}{>{\centering\arraybackslash}m{1.6cm} |>{\centering\arraybackslash} m{2.5cm} |>{\centering\arraybackslash} m{3cm} | m{7cm}}
+\textbf{\# Rounds} & \textbf{\# Tests Passed} & \textbf{\# Tests Failed} & \textbf{Failed Tests \& Proportions} \\
+\hline
+$1$ & $188$ & $1$ & 
+Spectral ($0.9609$) \\
+
+\hline
+$2$ & $188$ & $1$ & 
+Random Excursions Variant [+3] ($0.9529$) \\
+
+\hline
+$3$ & $187$ & $2$ & 
+Non-Overlapping Template [\#58] ($0.9531$) \newline
+Random Excursions Variant [+2] ($0.9529$) \\
+
+\hline
+$4$ & $187$ & $2$ & 
+Non-Overlapping Template [\#54] ($0.9609$) \newline
+Overlapping Template ($0.9609$) \\
+
+\hline
+$5$ & $187$ & $2$ & 
+Non-Overlapping Template [\#32] ($0.9609$) \newline
+Non-Overlapping Template [\#86] ($0.9609$) \\
+
+\hline
+$6$ & $187$ & $2$ & 
+Non-Overlapping Template [\#4] ($0.9531$) \newline
+Non-Overlapping Template [\#100] ($0.9609$) \\
+
+\hline
+$7$ & $186$ & $3$ & 
+Non-Overlapping Template [\#22] ($0.9609$) \newline
+Non-Overlapping Template [\#68] ($0.9609$) \newline
+Random Excursions [+4] ($0.9420$) \\
+
+\hline
+$8$ & $187$ & $2$ & 
+Non-Overlapping Template [\#126] ($0.9453$) \newline
+Non-Overlapping Template [\#137] ($0.9609$) \\
+
+\hline
+$9$ & $187$ & $2$ & 
+Non-Overlapping Template [\#12] ($0.9609$) \newline
+Random Excursions [-1] ($0.9467$) \\
+
+\hline
+$10$ & $188$ & $1$ & 
+Non-Overlapping Template [\#$103$] ($0$.$9609$) \\
+
+\hline
+$11$ & $187$ & $2$ & 
+Non-Overlapping Template [\#45] ($0.9453$) \newline
+Non-Overlapping Template [\#109] ($0.9609$) \\
+
+\hline
+$12$ & $186$ & $3$ & 
+Spectral ($0.9609$) \newline
+Non-Overlapping Template [\#104] ($0.9609$) \newline
+Non-Overlapping Template [\#110] ($0.9609$) \\
+
+\hline
+$13$ & $189$ & $0$ & 
+N/A \\
+
+\hline
+$14$ & $188$ & $1$ & 
+Non-Overlapping Template [\#79] ($0.9531$) \\
+
+\hline
+$15$ & $189$ & $0$ & 
+N/A \\
+
+\hline
+$16$ & $186$ & $3$ & 
+Non-Overlapping Template [\#81] ($0.9609$) \newline
+Non-Overlapping Template [\#102] ($0.9609$) \newline
+Non-Overlapping Template [\#130] ($0.9531$) \\
+\end{tabular}
+\caption{NIST Statistical Test Suite results}
+\label{tab:PvalProportionResults}
+\end{table}
+
+At first, it may seem alarming that statistical tests are failing at all.
+However, one must take into account that the proportion for a failed test at most exceeds the lower bound less than $.03$. 
+Furthermore, there are no significantly \emph{repeated} failures; that is, no specific test fails a high number of times and therefore raises a concern.
+While the Non-Overlapping Template test does fail more often than others, it represents the vast majority of the overall tests run and so this is expected.
+In addition, it does not repeatedly fail on a specific template.
+
+We contrast these results with those found for the AES candidate HPC in \cite{NIST1999_AES_STS_Testing}. 
+This was the only AES candidate found to exhibit definitively non-random statistical behavior.
+HPC failed $23.96\%$ of the time in multiple tests, which is far greater than our failure rate.
+In the same year it was discovered that HPC suffers from equivalent keys \cite{DHalluin1999_HPC_EquivalentKeys}.
+Our results are similar to the rest of the AES candidate algorithms, for which there are no real statistical anomalies.
+
+\subsubsection{\pval Distribution}
+It is also important to verify that the distribution of \pvals for each test is uniform enough.
+Even if a test passed in the previous section, a uniformity failure on the \pvals indicates non-random behavior.
+The uniformity test NIST recommends involves computing a $\chi^2$ statistic with nine degrees of freedom on the ``binned'' \pvals for each test. 
+NIST provides minimal support for this by binning the \pvals into $10$ equally spaced intervals for each test.
+The $\chi^2$ statistic is given by
+\begin{equation*}
+\chi^2 = \sum\limits_{i=1}^{10} \frac{(F_i - \frac{s}{10})^2}{\frac{s}{10}},
+\end{equation*}
+where $F_i$ is the number of \pvals in bin $i$ and $s$ is the sample size.
+A new valued called $\pval_\mathrm{T}$ is then calculated as follows:
+\begin{equation*}
+\pval_\mathrm{T} = \mathbf{igamc}(\frac{9}{2}, \frac{\chi^2}{2})
+\end{equation*}
+where $\mathbf{igamc}$ is the incomplete gamma function given by
+\begin{equation*}
+Q(a,x) = \frac{1}{\Gamma(a)} \int\limits_{x}^{\infty} e^{-t}t^{a-1} dt
+\end{equation*}
+and the gamma function $\Gamma$ is
+\begin{equation*}
+\Gamma(z) = \int\limits_{0}^{\infty}t^{z-1}e^{-t} dt.
+\end{equation*}
+The resulting $\pval_\mathrm{T}$ is compared to a new significance level $\alpha = .0001$ as recommended by NIST.
+If $\pval_\mathrm{T} \ge \alpha$ then the uniformity test passes.
+
+Our Python script uses the SciPy library \cite{SciPy2014_Library} to help compute $\pval_\mathrm{T}$ for every test and for every number of rounds.
+There were zero uniformity failures for each number of rounds tested up to the maximum of $16$.
+
+\section{Avalanche Testing}
+The \emph{avalanche criterion} (AC) is stated as follows: when a single bit of the input changes, on average half of the output bits should change. 
+For our construction, it makes most sense to test for the AC at the permutation level.
+In particular, we are interested in how many rounds it takes for the AC to be satisfied.
+At this number of rounds, the permutation $f$ is said to achieve \emph{full diffusion}.
+Intuitively, it is good practice to maximize the number of full diffusions achieved within the number of rounds used for the algorithm.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{c|c|c|c}
+\textbf{\# Rounds} & \textbf{Average HD} & \textbf{Min HD} & \textbf{Max HD} \\
+\hline
+$1$  &  $21.94$ & $10$  & $36$ \\
+$2$  & $180.29$ & $113$ & $242$ \\
+$3$  & $256.28$ & $223$ & $283$ \\
+$4$  & $256.10$ & $226$ & $287$ \\
+$5$  & $256.40$ & $220$ & $289$ \\
+$6$  & $256.55$ & $227$ & $293$ \\
+$7$  & $255.50$ & $211$ & $287$ \\
+$8$  & $255.65$ & $220$ & $289$ \\
+$9$  & $256.20$ & $219$ & $289$ \\
+$10$ & $256.05$ & $219$ & $295$ \\
+$11$ & $256.87$ & $218$ & $287$ \\
+$12$ & $255.39$ & $224$ & $291$ \\
+$13$ & $255.18$ & $218$ & $289$ \\
+$14$ & $256.82$ & $224$ & $288$ \\
+$15$ & $256.04$ & $223$ & $290$ \\
+$16$ & $255.41$ & $221$ & $286$ \\
+\end{tabular} 
+\caption{Avalanche test results for the permutation $f$}
+\label{tab:AvalancheTesting}
+\end{table}
+
+As part of our permutation test code given in Section~\ref{sec:Permutation.h}, we provide a function for computing the average Hamming distance (i.e.\ number of bits changed) between the input and output for every number of rounds up to the maximum of $16$. 
+This is done by, for each number of rounds, consecutively flipping one bit at a time of the initial state and running the permutation, keeping track of Hamming distances between the inputs and outputs along the way.
+The minimum and maximum Hamming distances are also computed for completeness.
+The results of this experiment are shown in Table~\ref{tab:AvalancheTesting}.
+
+From this table, it is clear that full diffusion is achieved over the entire $512$-bit state after just three rounds of the underlying permutation.
+This means that for a $128$-bit key with $10$ rounds, three full diffusions are achieved.
+For a $256$-bit key with $16$ rounds, five full diffusions are achieved.
+
+As with the NIST STS results, this does not at all imply resistance against powerful attacks such as linear and differential cryptanalysis.
+In fact, linear and differential cryptanalysis have been shown to be very effective against cryptographic primitives which satisfy the AC \cite{Heys1995_Avalanche}.
+We present these results merely as further proof of the excellent diffusive capabilities of our bitwise permutation and mixing steps.
+

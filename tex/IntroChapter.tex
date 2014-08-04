@@ -1,0 +1,170 @@
+%------------------------------
+% CHAPTER:Introduction
+%------------------------------
+\chapter{Introduction}
+\label{ch:Intro}
+The overarching goal of cryptography is to enable people to communicate privately over an insecure channel in the presence of adversaries.
+This notion may be abstracted further; for example, the sending and receiving party may be the same person writing to and reading from a storage medium over time.
+Two requirements for achieving this goal are encryption and authentication.
+Encryption provides \textit{confidentiality} while authentication provides data \textit{integrity} and assurance of message origin.
+
+Encryption without authentication has been shown to be insecure in practical instances several times in recent history.
+For example, Wireless Equivalence Privacy (WEP), an algorithm for ``securing'' communications over wireless networks, is badly broken due (in part) to a lack of proper authentication \cite{Borisov2001_WEP}.
+In fact, it is so badly broken that people with no cryptographic expertise can use existing tools on standard consumer machines to break into networks that use $104$-bit WEP in less than $60$ seconds \cite{Tews2007_BreakingWEP}.
+
+Another example of a flaw in prevalent systems due to a lack of proper authentication came in 2002.
+An attack was found on the CBC mode of encryption employed by protocols such as SSL and IPSEC.
+The attack could have been avoided had an authenticated encryption scheme been used \cite{Vaudenay2002_CBC_Flaws}.
+
+%------------------------------
+% SECTION: Motivation
+%------------------------------
+\section{Motivation}
+Many authenticated encryption algorithms are in existence today, but they are often unsatisfactory in terms of performance, security, or ease of use.
+Some algorithms require two passes per block of plaintext to encrypt and authenticate.
+This is generally undesirable because it often means a much slower algorithm.
+Other algorithms have been shown to be insecure or difficult to use properly.
+Many algorithms, such as the ones based on generic composition, require two keys.
+This should be avoided when possible because key management is a difficult problem.
+
+Furthermore, a new authenticated encryption algorithm is required that meets the stringent requirements of government and military applications.
+Such algorithms are not typically in the public domain.
+The goal of this is partially to reduce or eliminate academic interest in cryptanalyzing the algorithm and publishing results.
+This stance is highly controversial.
+Still, the security of such algorithms depends entirely on the secrecy of the key and not on the secrecy of the algorithm.
+The assumption is still made that the enemy knows the details of the algorithm being used at any time \cite{Kurdziel2002_BaselineRequirements}.
+
+For this reason, there is a need for a customizable authenticated encryption algorithm.
+This algorithm should remain secure as long as customizations are made within certain guidelines.
+The result is an algorithm which can be made unique on a per-user or per-application basis without the effort of cryptanalyzing every specific instantiation.
+We present such an algorithm here.
+First, it is important to understand how authenticated encryption has been evolving over the years.
+
+%------------------------------
+% SECTION: Previous Efforts
+%------------------------------
+\section{Overview of Authenticated Encryption}
+\subsection{AE Through Generic Composition}
+The na{\"i}ve approach to authenticated encryption is generic composition.
+In this construction, one simply computes the ciphertext under a given key and computes the MAC under a different key.
+These operations can be done in any order or at the same time.
+There are thus three generic composition types: \emph{Encrypt-and-MAC}, \emph{MAC-then-Encrypt}, and \emph{Encrypt-then-MAC}.
+The names here are straightforward and describe exactly the order of operations.
+In Encrypt-and-MAC, the encryption and authentication operations are performed in parallel and the ciphertext and MAC are concatenated together at the end.
+MAC-then-Encrypt computes the MAC, appends it to the plaintext, and then encrypts the result.
+Encrypt-then-MAC computes the ciphertext first and then computes the MAC over the ciphertext. 
+
+There is much ongoing debate about which generic composition method is best and each method has pros and cons in terms of security and performance.
+As a simple example, consider the performance of each method at a high level of abstraction.
+In Encrypt-and-MAC, the encryption (decryption) and authentication can happen in parallel.
+If using MAC-then-Encrypt, decryption must be performed before the MAC can be verified.
+The MAC can be checked before decryption in the case of Encrypt-then-MAC, thus saving the performance hit of decryption for messages in which authentication fails \cite{Ferguson2010_CryptographyEngineering}.
+
+\subsection{AE Modes of Operation}
+There are many existing block cipher modes of operation that provide authenticated encryption.
+The main difference between a generic composition and a mode of operation for authenticated encryption is that a generic composition always requires two keys, while a mode of operation generally requires only one.
+This is a huge benefit because key management is a difficult task, so it is desirable to limit the number of keys required for a cryptographic algorithm.
+
+\subsubsection{Patent-Encumbered Modes}
+The first notable modes of operation for AE were created by Jutla, an IBM researcher, in the year 2000.
+The two modes are called Integrity Aware Cipher Block Chaining (IACBC) and Integrity Aware Parallelizable Mode (IAPM) \cite{Jutla2001_AE}.
+IACBC, as the name suggests, was inspired by the CBC mode of operation.
+This mode is highly serial in nature.
+IAPM was inspired by the Electronic Codebook (ECB) mode, which is highly parallelizable but insecure when used directly.
+Jutla's modes are historically noteworthy in that they provide authenticated encryption in a single pass with minimal overhead; however, they come with many disadvantages.
+For example, they do not support additional authenticated data (e.g.\ headers that are only authenticated, not encrypted).
+An even bigger problem is that they are highly patent encumbered.
+On top of all this, they require two keys and the underlying block cipher decryption mode.
+As a result of the lack of popularity, there has not been much cryptanalysis performed on IACBC or IAPM.
+
+In 2001, Rogaway et al.\ \cite{Rogaway2003_OCB} introduced a new AE mode called Offset Codebook (OCB) mode.
+This mode is based on IAPM, but with many added features.
+OCB requires only a single key and provides support for additional authenticated data.
+Furthermore, it is highly parallelizable and also a single-pass mode.
+The main disadvantages of OCB are that it also requires the block cipher decryption mode and that it is also patent encumbered. 
+
+\subsubsection{Patent-Free Modes}
+Counter with CBC-MAC (CCM) mode was created by Whiting et al.\ in 2003 as a response to OCB's patented status \cite{Whiting2003_CCM}. CCM mode is patent-free but has many disadvantages.
+Like all of the patent-free modes that will be discussed here, it requires two passes under a single key.
+It does not, however, require the decryption mode of the underlying block cipher since it is built on Counter mode.
+CCM mode does not support block sizes other than $128$ bits and does not support stream processing.
+This is a significant disadvantage because stream processing is often exactly what a AE construction is used for (e.g.\ streaming network traffic).
+Rogaway and Wagner present a detailed analysis of all of the disadvantages of CCM mode in \cite{Rogaway2003_CritiqueOfCCM}.
+
+Carter-Wegman + Counter (CWC) mode was introduced by Kohno et al.\ in 2004 as an attempt to improve upon the deficiencies of CCM mode \cite{Kohno2004_CWC}.
+Like CCM mode, it is a single-key mode that requires two passes.
+Unlike CCM, the second pass does not consist of any invocations of the underlying block cipher.
+It instead uses what is called a Carter-Wegman (CW) universal hash function.
+This CW hash function operates over a prime field and thus requires integer multipliers which consume a large amount of area when implemented in hardware.
+
+McGrew and Viega created Galois/Counter Mode (GCM) in 2004 in an effort to improve upon the efficiency of CWC mode \cite{McGrew2004_GCM}.
+Instead of operating in a prime field, GCM performs multiplication in a binary Galois field.
+As a result, it consumes much less area in hardware.
+Like all other patent-free modes described here, it is single-key and two-pass.
+It should be noted that some people may argue that GCM is single-pass because only the first pass calls the underlying block cipher.
+GCM has seen widespread adoption by the cryptographic community.
+It is arguably the most used mode of operation for AE in existence today.
+Indeed, GCM is a main reason for the advent of Intel's carry-less multiplication instruction (PCLMULQDQ) in their 2010 line of processors \cite{Gueron2010_IntelGCM}.
+
+EAX mode was introduced in 2004 by Bellare et al.\ as another alternative to CCM mode \cite{Bellare2004_EAX}.
+Like CCM mode, it is not parallelizable.
+Like all other modes listed here, it is single-key and two-pass.
+EAX mode is derived from a generic composition called EAX2 by the authors.
+EAX2 mode leaves the Pseudorandom Function (PRF) used for MAC computation and the underlying block cipher mode used for encryption unspecified.
+EAX2 uses two keys.
+EAX is a specific instantiation of EAX2 that uses only a single key.
+Like GCM, EAX mode has also seen widespread adoption.
+
+\subsection{Other Existing AE Constructions}
+\subsubsection{Stream Cipher Based}
+There are two notable stream ciphers that provide authenticated encryption: Helix \cite{Whiting2005_Helix} and Phelix \cite{Whiting2005_Phelix}, both from Whiting et al.\ Phelix is the successor of Helix and was submitted to the recent eSTREAM competition which was a competition aimed at yielding better stream ciphers.
+Phelix, though very fast, is not currently a viable AE candidate because of its vulnerability to differential-linear attacks as exposed by Wu and Preneel \cite{Wu2007_PhelixAttack}.
+The security flaw relates to lack of resistance to misuse of the stream cipher.
+Still, new stream cipher based AE constructions are probable in the future.
+
+\subsubsection{Duplex Constructions}
+The duplex construction is based on a sponge construction and has promising applications to authenticated encryption.
+This construction has many extremely desirable features.
+It is single-key, single-pass, and supports additional authenticated data and intermediate MACs.
+For these reasons, the duplex construction forms a foundation for this thesis; see Chapter~\ref{ch:SpongeAndDuplex} for an in-depth treatment.
+
+At the time of writing there is a new AE competition going on called CAESAR (Competition for Authenticated Encryption: Security, Applicability, and Robustness). 
+Of the $57$ first-round candidates, there are nine duplex-based submissions that are not withdrawn:
+Artemia, Ascon, ICEPOLE, Ketje, Keyak, NORX, PRIMATEs, STRIBOB, and $\pi$-Cipher \cite{Bernstein2014_CAESAR_Submissions}.
+It is far too early to tell which of these, if any, will be found to be secure and efficient enough for practical use.
+Furthermore, none of these submissions are readily customizable at an algorithmic level.
+Therefore they are not suitable for our purposes.
+
+%------------------------------
+% SECTION: Contribution
+%------------------------------
+\section{Our Contributions}
+The main contribution of this thesis is a novel, customizable authenticated encryption algorithm based on the duplex construction.
+This construction is suitable for hardware (e.g.\ FPGA) implementation.
+An itemized list of specific contributions is listed here:
+\begin{enumerate}
+\item Authenticated encryption algorithm specification
+  \begin{enumerate}
+    \item Includes customization suggestions and guidelines
+  \end{enumerate}
+\item Software model of the algorithm (C/C++)
+  \begin{enumerate}
+    \item Includes various tests and test data generators
+    \item Includes \gfsixteen library for algorithm verification
+  \end{enumerate}
+\item Tool for finding suitable bitwise permutations for algorithm customization (Python)
+\item Survey of relevant cryptanalysis techniques and cryptanalysis results
+\item Statistical test results 
+\item Tool for ensuring acceptable distribution of \pvals (Python)
+\end{enumerate}
+
+The rest of this thesis is organized as follows.
+In Chapter~\ref{ch:Math} we discuss some mathematical concepts that are central to this thesis.
+In addition, we explain the notation used for the remainder of this document.
+Chapter~\ref{ch:SpongeAndDuplex} explains in detail the sponge and duplex constructions as well as their resistance to generic attacks. 
+The duplex construction forms the basis for the algorithm designed in this thesis.
+In Chapter~\ref{ch:AlgorithmSpec} we provide a full specification for the AE algorithm as well as providing guidelines for customizations that can be made without reducing our security margin.
+Cryptanalysis of our construction is considered in Chapter~\ref{ch:Cryptanalysis}, where we provide a survey of potentially relevant attacks.
+A variety of statistical tests and their results for our algorithm are presented in Chapter~\ref{ch:StatisticalTesting}.
+Finally, we conclude in Chapter~\ref{ch:Conclusions} and provide some ideas for future work.
+

@@ -1,0 +1,147 @@
+%------------------------------
+% CHAPTER: Mathematical Foundation
+%------------------------------
+\chapter{Mathematical Foundation and Notation}
+\label{ch:Math}
+There are several mathematical concepts central to this research that we will briefly explain here.
+The notation used in the rest of this thesis is also explained here for clarity.
+
+\section{Algebraic Structures}
+\subsection{Groups}
+An algebraic \emph{group} is a set of elements $G$ together with a binary operation $*$ (e.g.\ multiplication or addition) that satisfies the following properties:
+\begin{enumerate}
+\item \emph{Associativity}. The operation is associative, i.e.\ $(a*b)*c = a*(b*c)$ for all $a, b, c \in G$.
+\item \emph{Closure}. $G$ is closed under $*$; that is, $a*b \in G$ for all $a,b \in G$.
+\item \emph{Identity}. There is an element $e \in G$ (called the \emph{identity}) such that $a*e = e*a = a$ for all $a \in G$.
+\item \emph{Inverses}. For each element $a \in G$ there exists an element $a^{-1} \in G$ (called the \emph{inverse} of $a$) such that $a*a^{-1} = a^{-1}*a = e$.
+\end{enumerate}
+A group may also have the property that $a*b = b*a$ for all $a, b \in G$.
+In other words, it is commutative.
+We call these groups \emph{abelian} groups.
+The most common example of a group is probably $\mathbb{Z}$, the set of integers under addition, where the identity $e = 0$.
+
+\subsection{Rings}
+An algebraic \emph{ring} is a set of elements $R$ together with two binary operations $\cdot$ (called multiplication, with $a \cdot b$ denoted $ab$ for brevity) and $+$ (called addition) that satisfies the following properties:
+\begin{enumerate}
+\item $R$ is an abelian group under addition; its identity is called $0$.
+\item \emph{Associativity}. Multiplication and addition are both associative. 
+\item \emph{Distributivity}. $a(b+c) = ab + ac$ and $(b+c)a = ba + ca$; that is, multiplication distributes over addition.
+\end{enumerate}
+A ring is called abelian if multiplication also commutes over it. 
+The most common example of a ring is also $\mathbb{Z}$, but now with multiplication as well as addition.
+
+\subsection{Fields}
+An algebraic \emph{field} is a set of elements $\mathbb{F}$ together with the operations $\cdot$ and $+$ such that:
+\begin{enumerate}
+\item $\mathbb{F}$ is an abelian ring.
+\item $\mathbb{F}$ is an abelian group under multiplication; its identity is called $1$.
+\end{enumerate}
+
+Groups, rings, and fields (all of which are \emph{algebraic structures}) may be of finite or infinite cardinality.
+The cardinality of an algebraic structure $G$ is called its \emph{order} and is denoted $|G|$.
+
+We use an exponential representation as shorthand for applying an operation $*$ to the same element.
+For example, $a*a*a = a^3$.
+For some structure $G$, the \emph{order} of an element $a \in G$ is the smallest integer $k$ such that $a^k = e$.
+For structures of finite order, it is a well-known result (Lagrange's theorem) that the order of an element divides the order of the structure \cite{Gallian2012_AbstractAlgebra}.
+
+\subsection{Galois Fields}
+
+Finite fields are also commonly referred to as Galois fields (GFs).
+It is another well-known result that all Galois fields are of prime power order.
+A Galois field of order $p^k$ is denoted GF($p^k$) or $\mathbb{F}_{p^k}$, where $p$ is prime.
+$p$ is called the \emph{characteristic} of the field and it is the smallest positive integer such that $a^p = 0$.
+Fields with $p=2$ are typically of the most interest to cryptographers, and they are often called binary Galois fields.
+$k$ is called the \emph{degree} of the field.
+
+When the degree of a field is greater than one, its elements can be represented as polynomials belonging to the set of equivalence classes modulo an irreducible polynomial $f(x)$. 
+The degree of this polynomial, denoted $\deg(f(x))$, is equal to the degree of the field.
+We denote a GF of order $p^k$ along with its irreducible polynomial as $\mathrm{GF}(p^k) / \left\langle f(x) \right\rangle$.
+Elements in the field are represented using a polynomial basis in the indeterminant $x$ with the form
+\begin{equation*}
+a = \alpha_{k-1}x^{k-1} + \alpha_{k-2}x^{k-2} + \ldots + \alpha_1 x + \alpha_0,
+\end{equation*}
+where $\alpha_i \in \mathbb{Z}_p$.
+For example, in a binary Galois field we have $\alpha_i \in \mathbb{Z}_2$.
+Since operations in the GF are done modulo $f(x)$, any element $a \in \mathrm{GF}(p^k)$ must satisfy $\deg(a) < k$.
+
+For a binary Galois field we often represent elements in binary or hex format, as this is how they will be implemented in practice.
+For example, consider the element $x^{15} + x^3 + x^2 + 1$ in \gfsixteen.
+This element can be represented in hex as $\mathrm{0x800d}$, where the most-significant bit (MSB) corresponds to $x^{15}$. 
+
+Addition in finite fields is done by performing element-wise addition over $\mathbb{Z}_p$.
+In a binary Galois field, this is equivalent to the bitwise XOR operation.
+Multiplication is performed by doing polynomial multiplication as usual and then reducing modulo $f(x)$ if needed.
+There are methods of optimizing this operation in both software and hardware.
+
+Interpreting binary strings as elements of a binary Galois field is only useful for certain operations. Other times, we interpret portions of our state as arbitrary bitstrings for which certain other operations are defined.
+ 
+\section{Bitstrings}
+Bitstrings are strings of elements in $\Ztwo$; in other words, they are binary strings.
+We say $s \in \Ztwo^n$ if $s$ is a bitstring of length $n$.
+$\Ztwo^*$ indicates bitstrings of arbitrary but finite length and $\Ztwo^{\infty}$ denotes bitstrings of infinite length.
+
+\subsection{Operations}
+There are several relevant operations we define for bitstrings:
+\begin{itemize}
+\item $\lfloor s \rfloor_{\ell}$ indicates the truncation of a bitstring $s$ to $\ell$ bits
+\item $s||t$ indicates the concatenation of bitstrings $s$ and $t$, with the resulting length being $|s| + |t|$
+\item $s \lll r$ indicates the logical left rotation of bitstring $s$ by $r$ bits 
+\item $s \ggg r$ indicates the logical right rotation of bitstring $s$ by $r$ bits 
+\item $s \oplus t$ indicates the exclusive-or (XOR, or bitwise addition modulo $2$) of bitstrings $s$ and $t$, where $|s| = |t|$ is assumed
+\item $\mathbf{HW}(s)$ indicates the Hamming weight of bitstring $s$
+\item $\mathbf{HD}(s,t)$ indicates the Hamming distance between bitstrings $s$ and $t$, where $|s| = |t|$ is assumed
+\end{itemize}
+
+The \emph{Hamming weight} of a string is defined as the number of nonzero elements it contains.
+The \emph{Hamming distance} between two strings is the number of elements that differ between them.
+Note that for elements of $\mathbb{Z}_2^n$, 
+\begin{equation*}
+\mathbf{HD}(s,t) = \mathbf{HW}(s \oplus t).
+\end{equation*}
+
+For this work, a bitstring of length $16$ is called a \emph{word}.
+The state of our cryptosystem, as we will see, is an element of $\mathbb{Z}_2^{512}$ that may be considered at times as the concatenation of $32$ contiguous words.
+Where it matters, the MSB will be specified for a given operation.
+
+\section{Shannon's Information Theory}
+It is widely recognized that Claude Shannon laid the foundation for modern symmetric key cryptography in the late 1940s through two seminal papers on information theory and secrecy systems.
+His major relevant contributions include the notions of entropy, confusion, and diffusion \cite{Shannon1948_AMTOC}\cite{Shannon1949_CTOSS}.
+
+\subsection{Entropy}
+\emph{Entropy}, as defined by Shannon, is the measure of the amount of information in some message $M$. It is denoted as $H(M)$ and is quantitatively defined as  
+\begin{equation*}
+H(M) = \log_2 n,
+\end{equation*}
+where $n$ is the number of possible \emph{meanings} of the message.
+For example, the entropy of a message containing only information about what month it is is $\log_2(12) \approx 3.58$ since there are $12$ months.
+Another way to look at this is that exactly $\lceil 3.58 \rceil = 4$ bits are required to minimally encode in binary what month it is.
+
+Entropy also measures \emph{uncertainty}.
+The uncertainty of a message $M$ is the number of plaintext bits needed to be recovered from ciphertext in order to learn the plaintext.
+For example, if we know that the plaintext is either ``HEADS'' or ``TAILS'' when provided with the ciphertext ``ASDFQJWE'', then the uncertainty is unity.
+We need only learn one bit (if chosen correctly) to learn the plaintext.
+
+We often discuss the entropy of cryptosystems with respect to their key space.
+For example, a symmetric key system with a $128$-bit key should have an entropy of $128$ bits.
+
+\subsection{Transformations}
+A \emph{transformation} is simply a function
+\begin{equation*}
+t \from X \to Y,
+\end{equation*} 
+where $X$ is the domain and $Y$ is the codomain.
+Some transformations on a space are \emph{entropy-preserving}; that is, if an input $x$ has entropy $H(x)$ before the transformation, it has the exact same entropy (and thus uncertainty) after the transformation.
+An obvious requirement for entropy-preserving transformations is that they are bijective.
+We call a bijective transformation in which the domain is equal to the codomain a \emph{permutation}. 
+This notion is of central importance to the remainder of this thesis.
+
+\subsection{Confusion and Diffusion}
+Also of central importance to this thesis are Shannon's qualitative notions of confusion and diffusion.
+\emph{Confusion} is a generic method used to obscure the relationship between the plaintext and ciphertext.
+For example, substitution provides confusion.
+\emph{Diffusion} is a generic method that aims to dissipate the redundancy of plaintext throughout the ciphertext.
+For example, bitwise permutations provide diffusion.
+In theory, extremely large-scale substitutions are sufficient to create a secure symmetric key system.
+However, in practical block cipher systems both confusion and diffusion are required for efficiency reasons \cite{Schneier1996_Applied}.
+

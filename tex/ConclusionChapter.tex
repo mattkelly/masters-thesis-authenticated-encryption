@@ -1,0 +1,62 @@
+%------------------------------
+% CHAPTER:Conclusions
+%------------------------------
+\chapter{Conclusions and Future Work}
+\label{ch:Conclusions}
+
+\section{Conclusions}
+In this thesis we designed an authenticated encryption algorithm based on the duplex construction that we believe to be highly secure.
+This algorithm can be customized on a per-user or per-application basis by following the guidelines we presented as part of its specification.
+We believe that this is the only customizable authenticated encryption algorithm to date.
+Furthermore, we believe that this is the first cryptosystem to use a $16$-bit S-box.
+We have shown that this large S-box, when combined with good diffusion, provides superior resistance against differential and linear cryptanalysis due to its small differential probabilities and linear biases.
+Because this S-box is based on bijective power mappings over a Galois field, it can be efficiently implemented in hardware (like the rest of our algorithm) and does not require a look-up table.
+
+Following the algorithm specification, we presented a survey of state of the art cryptanalysis techniques and assessed our algorithm's resistance against them.
+Additionally, we provided a comprehensive statistical evaluation of the cryptosystem through the use of existing tools as well as our own.
+Our algorithm demonstrates no significant non-random statistical behavior and its underlying permutation achieves full diffusion on the entire $512$-bit state after only three rounds.
+
+\section{Future Work}
+The scope of this thesis is quite wide.
+As a result, there are many items that we would love to research further but have so far been unable to.
+Several of these items are provided here.
+
+\begin{enumerate}
+\item \textbf{Cryptanalysis:}
+The duplex construction we use guarantees security against generic attacks, and our underlying permutation is designed for resistance against many powerful cryptanalysis techniques.
+However, as with all cryptosystems, further cryptanalysis is always welcome and encouraged.
+In particular, it is likely possible to prove better bounds for our resistance against differential and linear cryptanalysis.
+So far, we have proved only the absolute worst case.
+Furthermore, it could be interesting to dig deeper into the fairly new bit-oriented integral attacks.
+While we strongly believe our permutation to be secure against such an attack, it would be a worthwhile exercise to attempt to prove this resistance.
+
+\item \textbf{Hardware Design:} 
+Due to time constraints we have only provided a software model of the algorithm in this thesis.
+In practice, our algorithm is intended for hardware (e.g.\ FPGA) implementation.
+One of the natural next steps is to implement the construction in hardware and benchmark its performance.
+
+\item \textbf{S-boxes:} 
+The particular instantiation of our algorithm described in Chapter~\ref{ch:AlgorithmSpec} uses a specific S-box based on bijective power mappings. 
+We analyzed this S-box to determine its maximum differential probability and maximum linear bias.
+There are several other similar S-boxes provided in \cite{Wood2013_SboxThesis}.
+It would be helpful to also analyze these other S-boxes in order to determine if their statistical properties are much different.
+If the maximum probabilities and biases are very close to those of our particular S-box, these other S-boxes could be swapped in as a customization without the need for determining new security margins (and possibly adjusting the number of rounds).
+In addition, it would be extremely fruitful to find completely new cryptographically secure $16$-bit S-boxes that are efficiently implementable in hardware.
+
+\item \textbf{Large Mixers:}
+Part of the reason that we use a $2 \times 2$ matrix multiplication for our mixer is that it is extremely efficient to implement in hardware.
+It is well known that the maximum branch number of an $m \times m$ matrix is $m+1$. 
+We achieve the maximum differential and linear branch number of three with this mixer.
+Larger matrices are capable of achieving higher branch numbers, and so it would be interesting to further explore them.
+In particular, Maximum Distance Separable (MDS) matrices such as the one used in AES are capable of achieving the maximum branch number.
+However, the construction of large MDS matrices that are efficiently implementable is a difficult problem \cite{Daemen2001_WideTrail}.
+An in-depth analysis of the tradeoff between a large MDS matrix with fewer rounds and a small matrix with more rounds is welcome for future work.
+
+\item \textbf{ARX-Based Mixers:}
+As part of the work that did not make it into the final AE algorithm presented here, we analyzed many ARX-based mixers.
+None of these mixers were able to achieve a branch number greater than two (the worst possible).
+So far it is unclear what an ARX-based mixer with branch number equal to three would look like, if it even exists.
+While we believe that our matrix multiplication-based mixer is an excellent choice, it would still be interesting to further analyze ARX-based mixers in an attempt to generalize their characteristics with respect to differential and linear cryptanalysis.
+
+\end{enumerate}
+

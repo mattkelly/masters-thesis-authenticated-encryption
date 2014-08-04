@@ -1,0 +1,406 @@
+%------------------------------
+% CHAPTER: Algorithm Specification
+%------------------------------
+\chapter{Algorithm Specification}
+\label{ch:AlgorithmSpec}
+Our authenticated encryption algorithm is based on the simplified duplex construction.
+Padding and domain separation are assumed to be done at some higher level in the overall system if needed.
+For this reason, it is sufficient to specify only the duplex parameters and the sponge function $f$.
+
+For Known Answer Tests (KATs) corresponding to this specification, see Appendix~\ref{appx:KATs}.
+
+\section{Duplex Parameters}
+We allow two key sizes: $128$ bits and $256$ bits.
+These are the NIST recommended symmetric key sizes as of 2011 \cite{NIST2011_KeySizes}.
+Our construction uses a $512$-bit internal state, so we have $b = 512$.
+The rate $r$ is $128$ bits for both key lengths, which means that the capacity $c$ is $384$.
+Keeping the rate at a constant $128$ bits for both instantiations means that switching between key lengths is a trivial task.
+
+The capacity $c = 384$ provides sufficient security against generic attacks for both $128$- and $256$-bit keys.
+As explained in Chapter~\ref{ch:SpongeAndDuplex}, we know from \cite{Jovanovic2014_Beyond} that the generic security level is
+\begin{equation*}
+\mathrm{min}(2^{(r+c)/2}, 2^c, 2^{|K|}).
+\end{equation*}
+For a $128$-bit key, the security level is $2^{128}$.
+For a $256$-bit key, the security level is $2^{256}$. 
+
+\section{Permutation $f$}
+Our underlying sponge function $f$ is a permutation, so it has the advantage of being fully entropy-preserving.
+Since it is bijective, $f^{-1}$ exists by definition.
+We specify both $f$ and $f^{-1}$ here.
+While $f^{-1}$ is never used in practice, it may be useful for cryptanalysis and verification purposes.
+
+\begin{figure}[p,height=.8\textheight]
+\centering
+\input{tex/Round.tikz.tex}
+\caption{A single round of the sponge permutation $f$. Each line represents a $16$-bit word.}
+\label{fig:Round}
+\end{figure}
+
+\begin{figure}[p,height=.8\textheight]
+\centering
+\input{tex/RoundInverse.tikz.tex}
+\caption{An inverse round of the permutation $f$. Each line represents a $16$-bit word.}
+\label{fig:RoundInverse}
+\end{figure}
+
+The permutation consists of a number of rounds.
+Figure~\ref{fig:Round} shows a diagram of a single round of the forward permutation.
+Figure~\ref{fig:RoundInverse} shows a single inverse round.
+Each round can be represented as the composition of several subfunctions or \emph{steps}: a substitution, a bitwise permutation, a mixing layer, and the addition of a round constant.
+These are represented respectively as $\mathbf{S}$, $\mathbf{\pi}$, $\mathbf{M}$, and $\oplus$ in the diagrams.
+
+\subsection{Substitution Step}
+The substitution step is a bricklayer permutation that uses $32$ identical, bijective $16 \times 16$ S-boxes.
+This step is the main source of confusion within the permutation.
+Furthermore, it is the only nonlinear step, as is typical with most substitution-based symmetric key algorithms \cite{Stinson2006_CTAP}.
+
+To the best of our knowledge this is the first cryptosytem to use such large S-boxes.
+We believe that, at the time of writing, the largest S-boxes used in the literature are the $8 \times 8$ bijective S-boxes used by the Advanced Encryption Standard (AES) \cite{Daemen2002_DesignOfRijndael}\cite{NIST2001_FIPS-197}.
+
+Our S-box is an AES-inspired design taken directly from Wood's thesis on the subject \cite{Wood2013_SboxThesis}.
+The primary reason for using this particular class of $16$-bit S-boxes is that they are efficiently implementable in hardware.
+Rather than being based on a random mapping, they are based on multiplicative inversion in a finite field followed by an affine transformation.
+This allows us to implement an actual circuit which performs the operations rather than use the corresponding (and prohibitively large) look-up table.
+
+Specifically, we use the reference C implementation provided in Appendix C of the aforementioned thesis.
+This S-box is based on multiplicative inversion in $\gfsixteen / \left\langle p(x) \right\rangle$ where 
+\begin{equation*}
+p(x) = x^{16} + x^5 + x^3 + x + 1.
+\end{equation*}
+We represent an input to the S-box (and inverse S-box) as a $16$-bit column vector 
+\begin{equation*}
+x = 
+\begin{pmatrix}
+x_{15} & x_{14} & \ldots & x_1 & x_0
+\end{pmatrix}^\mathrm{T},
+\end{equation*}
+where $x_{15}$ is the MSB.
+Using this notation, the forward S-box function is given as
+\begin{equation*}
+\renewcommand{\arraystretch}{0.7} % Make it square
+\mathbf{S}(x) = 
+\begin{pmatrix}
+0 & 0 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 1 & 1 & 1 & 1 & 0 \\
+1 & 1 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 1 & 0 & 1 & 0 & 1 & 0 \\
+1 & 1 & 0 & 0 & 1 & 0 & 1 & 1 & 0 & 1 & 0 & 1 & 0 & 0 & 1 & 1 \\
+1 & 1 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 1 & 0 & 0 & 0 & 0 & 0 \\
+
+1 & 1 & 0 & 0 & 0 & 1 & 1 & 0 & 0 & 1 & 1 & 1 & 1 & 0 & 1 & 1 \\
+0 & 1 & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 0 & 1 \\
+0 & 0 & 1 & 0 & 1 & 0 & 1 & 0 & 1 & 1 & 0 & 0 & 1 & 1 & 0 & 0 \\
+1 & 0 & 1 & 1 & 1 & 0 & 1 & 1 & 0 & 0 & 0 & 1 & 0 & 1 & 1 & 1 \\
+
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 1 & 1 & 0 & 1 \\
+1 & 0 & 1 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 0 \\
+1 & 0 & 1 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 1 & 0 & 1 & 0 & 0 \\
+1 & 0 & 1 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 0 & 1 & 1 & 0 & 0 & 1 \\
+
+1 & 0 & 1 & 0 & 0 & 1 & 0 & 1 & 1 & 0 & 0 & 1 & 0 & 0 & 0 & 1 \\
+0 & 1 & 0 & 0 & 0 & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+1 & 0 & 0 & 0 & 1 & 1 & 0 & 1 & 0 & 1 & 1 & 1 & 1 & 0 & 0 & 0 \\
+1 & 1 & 0 & 1 & 0 & 1 & 1 & 0 & 1 & 0 & 0 & 1 & 1 & 0 & 0 & 0 \\
+\end{pmatrix}
+\begin{pmatrix}
+x_{15} \\
+x_{14} \\
+x_{13} \\
+x_{12} \\
+x_{11} \\
+x_{10} \\
+x_{9} \\
+x_{8} \\
+x_{7} \\
+x_{6} \\
+x_{5} \\
+x_{4} \\
+x_{3} \\
+x_{2} \\
+x_{1} \\
+x_{0} \\
+\end{pmatrix}
+^{-1}
+\oplus
+\begin{pmatrix}
+0 \\
+1 \\
+0 \\
+0 \\
+0 \\
+1 \\
+0 \\
+1 \\
+1 \\
+0 \\
+1 \\
+1 \\
+0 \\
+1 \\
+1 \\
+1 \\
+\end{pmatrix}
+\end{equation*}
+and the inverse is
+\begin{equation*}
+\renewcommand{\arraystretch}{0.7} % Make it square
+\mathbf{S}^{-1}(x) = 
+\left[
+\begin{pmatrix}
+0 & 1 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 1 \\
+1 & 1 & 0 & 1 & 0 & 0 & 1 & 0 & 1 & 0 & 1 & 1 & 1 & 1 & 0 & 1 \\
+1 & 0 & 1 & 1 & 1 & 1 & 0 & 1 & 0 & 1 & 1 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 1 & 0 \\
+
+1 & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 0 & 0 & 1 & 1 & 1 & 1 & 1 & 1 \\
+1 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 0 & 1 & 0 & 1 & 1 \\
+0 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 0 & 1 & 1 & 1 & 1 & 0 \\
+
+0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 1 & 0 \\
+1 & 1 & 1 & 0 & 0 & 1 & 1 & 1 & 1 & 0 & 1 & 1 & 1 & 0 & 0 & 0 \\
+0 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 0 & 0 & 1 & 0 & 1 & 1 & 1 & 1 \\
+1 & 0 & 0 & 1 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 1 & 0 & 1 & 1 \\
+
+1 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 0 & 1 & 0 \\
+1 & 0 & 0 & 0 & 0 & 1 & 1 & 1 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 \\
+1 & 1 & 1 & 0 & 0 & 1 & 1 & 0 & 1 & 0 & 0 & 1 & 1 & 1 & 1 & 1 \\
+0 & 1 & 0 & 0 & 1 & 0 & 1 & 0 & 1 & 0 & 0 & 1 & 0 & 0 & 0 & 1 \\
+\end{pmatrix}
+\begin{pmatrix}
+x_{15} \\
+x_{14} \oplus 1 \\
+x_{13} \\
+x_{12} \\
+x_{11} \\
+x_{10} \oplus 1 \\
+x_{9} \\
+x_{8} \oplus 1 \\
+x_{7} \oplus 1 \\
+x_{6} \\
+x_{5} \oplus 1 \\
+x_{4} \oplus 1 \\
+x_{3} \\
+x_{2} \oplus 1 \\
+x_{1} \oplus 1 \\
+x_{0} \oplus 1 \\
+\end{pmatrix}
+\right]^{-1}.
+\end{equation*}
+
+A hardware implementation for this particular S-box requires just $1238$ XOR gates and $144$ AND gates.
+However, No concrete implementation (e.g.\ in VHDL) is provided; this is an area for future work.
+
+\subsection{Bitwise Permutation Step}
+Bitwise permutations are easily implementable in hardware via a simple rerouting of wires.
+Compared to a permutation on the words of the state, a bitwise permutation intuitively provides much better diffusion.
+The bitwise permutation step is the main source of long-range (i.e.\ across the entire state) diffusion in the algorithm.
+
+The bitwise permutation also helps maximize the minimum number of active S-boxes by being subject to certain constraints.
+We use a permutation that satisfies the following properties:
+\begin{enumerate}
+\item All outputs of a given S-box go to $16$ different mixers
+\item The permutation is a \emph{derangement}; it has no fixed points
+\item High order; it does not repeat within the number of rounds
+\item No low order bits; the order of any bit equals the order of the overall permutation
+\item Easily definable by some function
+\end{enumerate}
+There is obviously no cryptographic significance to how ``easy'' it is to express a bitwise permutation.
+This is merely to cut down on the search space and to avoid having to provide a table with $512$ entries to express the permutation.
+
+We denote the bitwise permutation function
+\begin{equation*}
+\pi \from \mathbb{Z}_{512} \to \mathbb{Z}_{512},
+\end{equation*}
+where it operates on the \emph{index} of a given bit, $x \in \mathbb{Z}_{512}$. 
+
+To understand our specific choice of $\pi$, it is useful to consider a poor choice first.
+For this we can turn our attention to the lightweight block cipher PRESENT which operates on a $64$-bit state over $31$ rounds.
+PRESENT uses the bitwise permutation
+\begin{equation*}
+\pi_P \from \mathbb{Z}_{63} \to \mathbb{Z}_{63}
+\end{equation*}
+given by the linear function
+\begin{equation*}
+\pi_P(x) = 16x \bmod{63}.
+\end{equation*}
+Since it operates in $Z_{63}$, an augmented mapping $\pi_P(63) = 63$ is required for the last bit \cite{Bogdanov2007_PRESENT}.
+
+The particular structure of $\pi_P$ led to an attack on PRESENT in 2009 \cite{Nakahara2009_PRESENT_Cryptanalysis}.
+The attack leverages the following undesirable properties of $\pi_P$:
+\begin{enumerate}
+\item There are four fixed points: $x = 0, 21, 41, 63$
+\item The order is only three: $\pi_P^3(x) = \pi_P(x)$
+\end{enumerate}
+The combination of these properties results in a decrease in the lower bound on the number of active S-boxes across four rounds since it is possible to construct a trail that branches back into itself after $\pi_P$ is iterated only three times.
+See Figure~\ref{fig:PRESENT_Trail} for a diagram that illustrates this trail.
+
+A simple way to avoid fixed points is to use an affine function rather than a linear function.
+An affine function over $\mathbb{Z}_{512}$ is of the form
+\begin{equation*}
+\pi(x) = \alpha x + \beta \bmod{512}.
+\end{equation*}
+For $\pi$ to be bijective, we require $\gcd(\alpha, 512) = 1$.
+Since the prime factorization of $512$ is simply $2^9$, it is equivalent to say that $\alpha$ must be odd \cite{Stinson2006_CTAP}.
+
+A low order bit is defined as a bit that has order less than the order of the overall bitwise permutation.
+It is cumbersome to mathematically characterize all permutations that satisfy the property that no bits have low order. Instead, we wrote a script (see Appendix~\ref{appx:SourceCodeListings}) to search for such permutations.
+The script also identifies if a given permutation satisfies all other properties that we require.
+We found $384$ permutations defined by affine functions over $Z_{512}$ that satisfy all properties. A complete listing is provided in Table~\ref{tab:BitwisePermutations}.
+
+We chose the following permutation to use for our algorithm since it is the first function to satisfy all properties:
+\begin{equation*}
+\pi(x) = 31x + 15 \bmod{512}
+\end{equation*}
+This particular bitwise permutation has order $32$ and its inverse is given by
+\begin{equation*}
+\pi^{-1}(x) = 479(x-15) \bmod{512}
+\end{equation*}
+since $31^{-1} \equiv 479$ in $\mathbb{Z}_{512}$.
+
+\subsection{Mix Step}
+The purpose of the mix step is to provide local diffusion (i.e.\ across two words) and increase the linear and differential branch numbers of a round from two to three.
+See Chapter~\ref{ch:Cryptanalysis} for more detail on branch numbers.
+We use a mixer based on multiplication by a $2 \times 2$ matrix in \gfsixteen modulo the irreducible polynomial
+\begin{equation*}
+p(x) = x^{16} + x^5 + x^3 + x^2 + 1.
+\end{equation*}
+The mixer takes two words $A$ and $B$ as input and produces outputs $A'$ and $B'$ as follows:
+\begin{equation*}
+\begin{pmatrix}
+A' \\ B'
+\end{pmatrix}
+=
+\begin{pmatrix}
+1 & x \\ x & x + 1
+\end{pmatrix}
+\begin{pmatrix}
+A \\ B
+\end{pmatrix}
+\end{equation*}
+The mix step is invertible because the matrix is invertible; its inverse is given by
+\begin{equation*}
+\begin{pmatrix}
+A \\ B
+\end{pmatrix}
+=
+\begin{pmatrix}
+a & b \\ b & c
+\end{pmatrix}
+\begin{pmatrix}
+A' \\ B'
+\end{pmatrix}
+\end{equation*}
+where
+\begin{align*}
+a &= x^{15} + x^{14} + x^{12} + x^{11} + x^9 + x^8 + x^6 + x^5 + x^4 + x + 1 \\
+b &= x^{14} + x^{13} + x^{11} + x^{10} + x^8 + x^7 + x^5 + x^4 + x^3 + 1 \\
+c &= x^{15} + x^{13} + x^{12} + x^{10} + x^9 + x^7 + x^6 + x^3 + x.
+\end{align*}
+This can be verified by using the provided \gfsixteen C library.
+The MSB of each word is taken as the leftmost bit and is represented by $x^{15}$. 
+
+The forward mixer is efficiently implementable in hardware.
+Notice that the outputs $A'$ and $B'$ can be written as
+\begin{align*}
+A' &= A \oplus Bx \\
+B' &= Ax \oplus Bx \oplus B
+\end{align*}
+since addition in \gfsixteen is simply the XOR operation.
+Figure~\ref{fig:MixerMatrix} shows how this matrix multiplication is implemented.
+
+\begin{figure}[ht]
+\centering
+\input{tex/MixerMatrix.tikz.tex}
+\caption{Hardware implementation of the forward mixer function.}
+\label{fig:MixerMatrix}
+\end{figure}
+
+The $x*$ operation is a multiplication by $x$ in \gfsixteen.
+Its implementation, which is shown in Figure~\ref{fig:xTimes}, is very simple. 
+Notice that a multiplication by $x$ is simply a left rotation followed by a reduction if the MSB was one.
+The reduction is derived from the fact that
+\begin{equation*}
+x^{16} \equiv x^5 + x^3 + x^2 + 1 \bmod{p(x)}
+\end{equation*}
+for our particular irreducible polynomial $p(x)$, and it is implementable using just three XOR gates.
+
+\begin{figure}[ht]
+\centering
+\input{tex/xTimes.tikz.tex}
+\caption{Hardware implementation of the $x*$ function. The leftmost bit is the MSB.}
+\label{fig:xTimes}
+\end{figure}
+
+\subsection{Add Round Constant Step}
+The add round constant step is the simplest by far, and it is its own inverse.
+A constant $512$-bit value is added to the state using bitwise XOR in order to disrupt symmetry and prevent slide attacks.
+The round constant $RC_i$ for round $i$ is given by the formula
+\begin{equation*}
+RC_i = \mathbf{SHA3\textbf{-}512}(\mathbf{ASCII}(i)),
+\end{equation*}
+where $\mathbf{ASCII}(i)$ is a function that provides the one or two byte ASCII representation of $i$ and $\mathbf{SHA3\textbf{-}512}$ is the SHA-3 hash function that outputs a $512$-bit message digest. 
+Table~\ref{tab:RC} provides the values of $RC_i$ up to $i = 16$.
+
+\input{tex/RC_Table.tex}
+
+\section{Number of Rounds}
+This algorithm uses $10$ rounds for a $128$-bit key and $16$ rounds for a $256$-bit key.
+The number of rounds is determined, as is typical with block ciphers and permutations, by calculating the number needed for resistance to linear and differential cryptanalysis and adding some buffer to increase the security margin. 
+For a more in-depth treatment, refer to Chapter~\ref{ch:Cryptanalysis}.
+
+\section{Customization}
+While a specific instantiation is specified here, our algorithm is highly customizable within our security margin.
+This could be useful in the case that different users want unique, proprietary algorithms.
+We list several possible customizations here.
+
+\subsection{State Initialization}
+In the given specification, the inner state (like the outer state) is initialized to zero.
+This is not a requirement; indeed, the inner state could be initialized to any $384$-bit value.
+Each user could generate their own unique value to set during the initialization phase.
+This happens before the first mute calls that absorb the key.
+
+\subsection{S-boxes}
+The AES-inspired S-box used here is efficiently implementable in hardware.
+There are certainly many other cryptographically secure $16$-bit S-boxes, but randomly generated ones may not be suitable for hardware implementation due to size constraints.
+This is an area for further research.
+Still, several other AES-like $16$-bit S-boxes are presented in \cite{Wood2013_SboxThesis}.
+Any new S-box introduced into the algorithm shall be analyzed to determine its linear and differential characteristics and the number of rounds should be adjusted accordingly if necessary.
+
+\subsection{Bitwise Permutations}
+The bitwise permutation provided in the specification is subject to the constraints explained before.
+There are many permutations that satisfy these constraints.
+We chose to use a permutation that is easily definable by an affine function as obtained by our script; this is not a requirement.
+A user could generate their own bitwise permutation subject to the given constraints via exhaustive search.
+
+\subsection{Mixers}
+Our mixer is based on a specific $2 \times 2$ matrix multiplication in \gfsixteen modulo a specific irreducible polynomial $p(x)$.
+Many matrices are expected to satisfy the constraints that we impose.
+These constraints are:
+\begin{enumerate}
+\item The matrix should be invertible in $\gfsixteen /\left\langle p(x) \right\rangle$
+\item The matrix should have differential and linear branch number equal to three (the maximum possible; see Chapter~\ref{ch:Cryptanalysis})
+\item The transformation should be efficiently implementable in hardware
+\end{enumerate}
+Note that the inverse transformation need not be efficiently implementable.
+Like the addition of a new S-box, any new mixer (i.e.\ matrix) introduced to the algorithm should be analyzed to ensure it meets these constraints.
+A transformation defined by $2 \times 2$ matrix multiplication that does meet the second requirement, for example, would lower our security margin and possibly require increasing the number of rounds significantly.
+
+It should be noted that before settling on a mixer based on matrix multiplication, many mixers based on modular addition, XOR, and rotation operations were tested.
+Systems or operations that rely mainly on these operations are typically called \emph{ARX-based}.
+None of the ARX-based mixers we tested met our requirement of increasing the branch number from two to three.
+However, for completeness, we enumerate all of the mixers examined in this work in Appendix~\ref{appx:ARX_Mixers}.
+
+\subsection{Round Constants}
+The round constants presented here are based on SHA-3 hash values.
+However, they could be any values that satisfy the following constraints.
+Round constants should be:
+\begin{enumerate}
+\item Unique for each round; to prevent against slide attacks
+\item Random, pseudorandom, or highly asymmetric; to reduce symmetry in the state
+\end{enumerate}
+The round constants are not expected to have any cryptographic significance outside of this.
+Different users can generate their own unique set of round constants without difficulty.
+
+There are also other ways of injecting asymmetry into the algorithm using constants.
+For example, the round constants could actually be rotation constants that define the amount to rotate each word on the inputs to mixers.
+

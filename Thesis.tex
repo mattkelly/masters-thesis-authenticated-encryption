@@ -1,0 +1,265 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Design and Cryptanalysis of a Customizable
+% Authenticated Encryption Algorithm
+% 
+% A Master's Thesis
+%
+% Author: Matt Kelly (mjk7841@rit.edu)
+% Defended: August 1, 2014
+%
+% Defense slides available at:
+% github.com/mattkelly/masters-thesis-defense
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[11pt,american]{report}
+\usepackage{rit-thesis}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage{subfigure}
+\usepackage[refpages]{gloss}
+\usepackage{babel}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{lscape}
+\usepackage{verbatim}
+\usepackage{enumerate}
+\usepackage{afterpage}
+\usepackage[mathscr]{euscript}
+\usepackage{xcolor}   % For colored links
+\usepackage{hyperref} % For internal links
+\usepackage{nag}      % Warn about old packages and commands
+\usepackage{fixltx2e} % Fix misc. LaTeX stuff
+\usepackage{xspace}   % Fix spacing at end of macros
+\usepackage{array}
+\usepackage{etoolbox}
+\usepackage{multirow}
+\usepackage{rotating}
+\usepackage{listings}
+
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\lstset{%
+  basicstyle=\tiny,
+  frame=single
+}
+
+\setcounter{MaxMatrixCols}{16}
+
+\newenvironment{smallpmatrix}
+  {\left(\begin{smallmatrix}}
+  {\end{smallmatrix}\right)}
+
+
+% For now, to help organize
+\setcounter{tocdepth}{5}
+\newcommand{\TODO}{\textcolor{red}{\textbf{TODO}}\xspace}
+
+\newcommand{\Ztwo}{\ensuremath{\mathbb{Z}_2}\xspace}
+\newcommand{\Zn}{\ensuremath{\mathbb{Z}_n}\xspace}
+\newcommand{\gftwo}{\ensuremath{\mathrm{GF}(2)}\xspace}
+\newcommand{\gfsixteen}{\ensuremath{\mathrm{GF}(2^{16})}\xspace}
+\newcommand{\ourpoly}{\ensuremath{x^{16} + x^5 + x^3 + x^2 + 1}\xspace}
+\newcommand{\gfwithpoly}{\ensuremath{\text{GF}(2^{16}) / \left\langle \ourpoly \right\rangle}\xspace}
+
+%\newcommand{\pval}{\ensuretext{P\text{-}value}\xspace}
+%\newcommand{\pvals}{\ensuretext{P\text{-}values}\xspace}
+\newcommand{\pval}{\textit{P-value}\xspace}
+\newcommand{\pvals}{\textit{P-values}\xspace}
+
+\newcommand{\Keccak}{\textsc{Keccak}\xspace}
+\newcommand{\SpongeWrap}{\textsc{SpongeWrap}\xspace}
+
+\newcommand{\drawxTimes}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (1em and 1em) node {$x*$};
+}
+\newcommand{\drawXOR}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (1em and 1em);
+  \draw[line width=2.5pt] (#1-.4, #2) -- (#1+.4, #2);
+  \draw[line width=2.5pt] (#1, #2-.4) -- (#1, #2+.4);
+}
+\newcommand{\drawAdder}[2]{% top left: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) rectangle (#1+1, #2-1);
+  \draw[line width=2.5pt] (#1, #2-.5) -- (#1+1, #2-.5);
+  \draw[line width=2.5pt] (#1+.5, #2-1) -- (#1+.5, #2);
+}
+\newcommand{\drawRot}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (2em and 1em) node {$\mathbf{ROT}$};
+}
+\newcommand{\drawMixerInputs}{
+  \draw[fill=gray!30] (0,16) rectangle (2,15) node[midway] {$A$};
+  \draw[fill=gray!30] (4,16) rectangle (6,15) node[midway] {$B$};
+}
+\newcommand{\drawMixerOutputs}[1]{%y offset from top
+  \draw[fill=gray!30] (0,16-#1) rectangle (2,15-#1) node[midway] {$A'$};
+  \draw[fill=gray!30] (4,16-#1) rectangle (6,15-#1) node[midway] {$B'$};
+}
+
+% Aliases for readability
+\let\from=\colon
+\let\to=\rightarrow
+
+\hypersetup{
+  linkbordercolor=blue % TODO why doesn't this work?
+}
+
+%\usepackage{watermark}
+%\watermark{\hspace{-0.3in} \textcolor{red}{\textbf{DRAFT 2}} \hspace{2.0in} \textbf{\today}}
+
+\makegloss
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title page
+% The \title{} can contain line breaks as appropriate.
+\title{\vspace{-0.20in}{Design and Cryptanalysis of a Customizable Authenticated Encryption Algorithm}}
+% The \titleline{} must have no line breaks in it.
+\titleline{Design and Cryptanalysis of a Customizable Authenticated Encryption Algorithm}
+% This date is really not used (unless \grantdate{}{} is blank)
+\date{August 2014}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% AUTHOR
+\author{Matthew Joseph Kelly}
+\dept{Computer Engineering}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% COMMITTEE MEMBERS
+\principaladvisor{Alan Kaminsky}{Professor, Department of Computer Science}
+\principaladvisortwo{Marcin {\L}ukowiak}{Associate Professor, Department of Computer Engineering}
+\firstreader{Michael Kurdziel}{Harris Corporation}
+\secondreader{Reza Azarderakhsh}{Assistant Professor, Department of Computer Engineering}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This is the expected date that the committee will sign your thesis.
+\grantdate{August}{2014}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This causes all front matter to be set.
+\beforepreface%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The dedication - if you choose to include one.
+% It should be vertically centered in the page. Since the style format doesn't
+% do it for you automatically, you can use the following technique.
+\prefacesection{Dedication}
+\vfill
+\begin{center}
+\emph{%
+To my parents, Donna and Martin.
+}
+\end{center}
+\vfill
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The acknowledgements page - if you choose to include one.
+\prefacesection{Acknowledgments}
+\vfill
+\linespread{1}
+\selectfont
+It seems so obvious now - to pursue a master's degree in cryptography, a discipline so elegantly balanced at the intersection of subjects I hold dear: engineering, mathematics, and computer science.
+However, the thought never crossed my mind until a suggestion from a professor nudged me in the right direction.
+That suggestion has since expanded into a deep passion of mine, and I hope that this thesis is merely the start of it.
+For this and much more, I thank Marcin {\L}ukowiak.
+
+I have had the opportunity to work with an incredible team throughout the duration of this research.
+The success of this thesis is due in very large part to help from Alan Kaminsky, who has provided excellent guidance and developed critical tools and design ideas used for this work.
+He has somehow managed to repeatedly accomplish tasks in a day that would have taken me far longer.
+I believe that some of his drive for excellence has rubbed off on me, and for that I'm thankful.
+
+I owe great thanks to Mike Kurdziel, who has continually provided support and given me invaluable insight into the cryptographic industry.
+This work would be far less compelling without ties to the real world.
+Thanks also to Harris Corporation for the financial support that helped make this research possible.
+I'm also very grateful for the teaching and guidance of Staszek Radziszowski, who is a primary source of my inspiration in the academic world.
+I only wish that I was able to spend more time with him, but I trust that this will not be the end of our conversations.
+I would also like to thank David Barth-Hart for generating and advancing my interest in algebra.
+It is easily the most beautiful subject I've ever studied and I cannot imagine a better professor to teach it.
+His passion for mathematics is highly contagious.
+Reza Azarderakhsh has also provided useful suggestions throughout this work.
+
+I'm incredibly grateful to Megan Gallo for taking on the world with me; together we've accomplished far more than I could have ever achieved by myself. 
+I look forward in excitement to what the future holds.
+Thanks also to her family for their continued support over the past years.
+I would also like to thank Norman Joyner, the greatest of friends, for helping keep me sane for as long as I can remember.
+He is an unstoppable force in the technology industry and I look to him for inspiration as I transition from academia.
+If I had room I'd personally thank all of the other people I'm fortunate to call my friends, new and old, who have supported me throughout college.
+
+Finally, I would like to thank my family.
+I'm very thankful to have two older brothers, Donald and Sean, to look up to in order to understand the value of hard work.
+Most importantly, my parents, Donna and Martin, have made incredible sacrifices to support me in college and in life.
+I hope they know that for every ounce of pride in their souls, there are two in mine.
+\vfill
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Abstract
+\begin{abstractpage}
+\vfill
+\linespread{1}
+\selectfont
+\input{tex/Abstract.tex}
+\vfill
+\linespread{1}
+\end{abstractpage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\tablespagefalse
+\figurespagefalse
+%\afterpreface generates the table of contents, list of tables (optional),
+% and list of figures (optional).
+\afterpreface%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\printgloss{Glossary}
+%A glossary entry~\gloss{Term} used in the text.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This is where the main body of the thesis starts
+\linespread{1}
+\selectfont
+\body%
+
+% Chapters
+\input{tex/IntroChapter.tex}
+\input{tex/MathChapter.tex}
+\input{tex/SpongeAndDuplexChapter.tex}
+\input{tex/AlgorithmSpecChapter.tex}
+\input{tex/CryptanalysisChapter.tex}
+\input{tex/StatisticalTestingChapter.tex}
+\input{tex/ConclusionChapter.tex}
+
+\linespread{1}
+\selectfont
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\nocite{*} % Include all references even if not cited in text
+\bibliographystyle{ieeetr}
+% Single space the bibliography to save space.
+\begin{singlespace}
+\bibliography{Thesis}
+\end{singlespace}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+\input{tex/PRESENT_TrailAppendix.tex}
+\input{tex/BitwisePermutationsAppendix.tex}
+\linespread{1}
+\selectfont
+\input{tex/ARX_MixersAppendix.tex}
+\linespread{1}
+\selectfont
+\input{tex/KAT_Appendix.tex}
+\input{tex/SourceCodeListings.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
+

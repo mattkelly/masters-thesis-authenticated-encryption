@@ -1,0 +1,307 @@
+%------------------------------
+% CHAPTER: Cryptanalysis
+%------------------------------
+\chapter{Cryptanalysis}
+\label{ch:Cryptanalysis}
+We have already discussed the security of this construction against generic attacks in Chapter~\ref{ch:SpongeAndDuplex}.
+The only requirement remaining is to assess the security of the underlying sponge permutation $f$.
+
+We present a survey of potentially relevant cryptanalysis techniques here.
+Focus is placed on differential and linear cryptanalysis since these techniques are so general, powerful, and prevalent.
+Resistance against these techniques should result in resistance against many other less general techniques.
+There is far too much to be said about various cryptanalysis techniques, and there are far too many to discuss here.
+Our aim is to provide intuitive explanations of prevalent methods and simply explain why our permutation should be resistant.
+Further cryptanalysis, as with all cryptosystems, is always welcome for future work.
+
+%------------------------------
+% Section: Differential Cryptanalysis
+%------------------------------
+\section{Differential Cryptanalysis}
+Differential cryptanalysis was publicly introduced by Biham and Shamir in 1991 in their landmark paper on the subject, \cite{Biham1991_Differential}.
+Since then, it has been applied with varying degrees of success to a great number of cryptosystems.
+As such, it is a fundamental requirement of symmetric key cryptosystem design to prove resistance to differential cryptanalysis.
+
+\subsection{Overview}
+% XOR is involutive
+The goal of differential cryptanalysis is to exploit non-random behavior of a system (in our case, a permutation) with regard to the propagation of differences.
+A \emph{difference}, denoted $\Delta X$, is the bitwise XOR (for our case) of two bitstrings. For example,
+\begin{equation*}
+\Delta X = X' \oplus X''
+\end{equation*}
+is the difference between bitstrings $X'$ and $X''$.
+For differential cryptanalysis, a difference $\Delta X$ is fed through a system and a resulting difference $\Delta Y$ is obtained.
+The pair of these two related differences is called a \emph{differential} and is denoted $(\Delta X,\Delta Y)$.
+
+Differentials occur with some associated probability.
+For an ideal system the probability of a given differential is $1/2^n$ where $n$ is the length of the bitstrings involved.
+A system is said to exhibit non-random behavior if the magnitude of the probability $p_D$ for some differential $(\Delta X, \Delta Y)$ is much greater than the ideal value.
+This information could be used to mount an attack on the system \cite{Heys2002_Tutorial}.
+
+To launch an effective attack, a cryptanalyst first has to focus on the S-boxes.
+The S-boxes are analyzed to determine their maximum differential probabilities.
+Note that in an actual attack, high probability $1$-bit-to-$1$-bit differentials are of most interest since these will likely be the easiest to propagate through the overall system.
+
+A \emph{differential trail} or \emph{characteristic} is the propagation of non-zero differentials throughout a system (i.e.\ across rounds).
+Figure~\ref{fig:PRESENT_Trail} shows an example trail through four rounds of PRESENT.
+A \emph{differentially active} S-box is an S-box that has a non-zero difference at its input during an attack; it is part of a differential trail.
+For example, if Figure~\ref{fig:PRESENT_Trail} shows a differential trail, then there are six differentially active S-boxes.
+
+Proving resistance against differential cryptanalysis for a substitution-permutation network requires coming up with a lower bound on the minimum number of active S-boxes across some number of rounds.
+The more active S-boxes there are, the less likely an attack is to succeed since exponentially more chosen plaintexts will be needed for additional each active S-box.
+The \emph{branch number} of an operation is of particular importance here. 
+It can be simply defined as the minimum number of active S-boxes across just two rounds of a system (e.g.\ our permutation).
+The technique of maximizing the branch number of a round is known as the \emph{wide trail design strategy}.
+It is the main design strategy behind AES, which has a round branch number of five \cite{Daemen2001_WideTrail}\cite{Daemen2002_DesignOfRijndael}.
+
+The number of plaintext/ciphertext pairs required to mount a successful differential attack should exceed the number required for a brute force attack.
+As the differential probability reduces across rounds, more pairs are required for a successful attack.
+We loosely refer to the number of pairs required as the \emph{complexity} of the differential attack.
+The number of rounds is increased until this complexity exceeds that of a brute force method.
+
+\subsection{Algorithm Resistance}
+To determine the resistance of our algorithm to differential cryptanalysis, we first have to determine the maximum differential probability of our S-box.
+We determined this value to be $p_{D,max} = 2^{-14}$ using an S-box evaluation program called \texttt{Eval16BitSbox} written with Kaminsky's Parallel Java 2 library \cite{Kaminsky2014_BlockCipherAnalysis}\cite{Kaminsky2014_PJ2}.
+
+Next, it is necessary to determine the branch number of a round.
+For this, we only need to analyze the mixer. 
+We purposefully designed a mixer with differential branch number equal to three, meaning that minimally three S-boxes will be differentially active between two rounds.
+This is in fact the maximum achievable branch number for a transformation defined by multiplication by a $2 \times 2$ matrix.
+To verify this, we used a SAT solver called CryptoMiniSat \cite{Soos2014_CryptoMiniSat}.
+This SAT solver takes as input a Boolean equation in conjunctive normal form (CNF) and determines if it is \emph{satisfiable}; that is, if it can ever produce an output of `$1$' for any set of input values.
+Our CNFs were generated using Kaminsky's \texttt{SatProblem} Java class \cite{Kaminsky2014_BlockCipherAnalysis}.
+The Boolean satisfiability problem is known to be NP-complete \cite{Sipser2012_TheoryOfComputation}; however, our CNFs were small enough that it finished within a minute for all cases tried (see Appendix~\ref{appx:ARX_Mixers} for failed mixer designs).
+
+The CNFs generated are unsatisfiable if and only if the mixer has differential branch number equal to three since it answers the following question: \emph{is it possible to have a difference in only one input and only one output?}
+Through SAT solver analysis we determined that this is not possible for our matrix multiplication-based mixer; that is, if there is a non-zero difference in only one input, there must be a non-zero difference in each output.
+In the event that there is a difference in both inputs, there may be a difference in only one output.
+This still leads to a differential branch number of three since two S-boxes must have been active in the previous round to lead to those two input differences.
+The probability of a difference in either output is $p_{D,out} = 2^{-15}$.
+
+With all of this information, it is possible to calculate the number of rounds needed for resistance to differential attacks.
+The worst-case probability of successfully propagating a difference over two rounds is given by
+\begin{equation*}
+(p_{D,max})^{\mathcal{B}_D} \cdot p_{D,out},
+\end{equation*}
+where $\mathcal{B}_D = 3$ is the differential branch number.
+From this we constructed Table~\ref{tab:DifferentialProbabilities}, which shows the worst-case differential probabilities for higher numbers of rounds.
+\begin{table}[ht]
+\centering
+\begin{tabular}{c|c}
+Rounds & Worse Case Differential Probability \\
+\hline
+$2$  & $2^{-57}$  \\
+$4$  & $2^{-114}$ \\
+$6$  & $2^{-171}$ \\
+$8$  & $2^{-228}$ \\
+$10$ & $2^{-285}$ \\
+$12$ & $2^{-342}$ \\
+$14$ & $2^{-399}$ \\
+$16$ & $2^{-456}$ \\
+\end{tabular}
+\caption{Worst case differential probabilities over increasing rounds}
+\label{tab:DifferentialProbabilities}
+\end{table}
+
+Therefore the complexity of a differential attack exceeds the complexity of a brute force search of a $128$-bit keyspace at six rounds.
+To increase our security margin significantly, we require $10$ rounds for a $128$-bit key.
+For a $256$-bit key, $16$ rounds are required to achieve a similar security margin.
+
+%------------------------------
+% Section: Linear Cryptanalysis
+%------------------------------
+\section{Linear Cryptanalysis}
+Linear Cryptanalysis was first introduced by Matsui in 1993 in his landmark paper, \cite{Matsui1993_Linear}.
+As with differential cryptanalysis, it is a fundamental requirement of symmetric key cryptosystem design to prove resistance against linear attacks.
+
+\subsection{Overview}
+Linear cryptanalysis is surprisingly similar to differential cryptanalysis in many ways. 
+However, for linear cryptanalysis we are concerned with estimating the behavior of a system using linear expressions rather than highly probable differential characteristics.
+As with differential cryptanalysis, the first step is to analyze the S-boxes involved in the substitution-permutation network.
+An S-box, by definition, should be highly nonlinear to provide sufficient confusion. 
+However, it is possible to uncover linear approximations of S-box outputs that occur with high (or low) probability.
+We can represent our S-box as a vectorial Boolean function 
+\begin{equation*}
+S \from \Ztwo^{16} \to \Ztwo^{16}
+\end{equation*}
+in which the input $X$ and output $Y$ are represented as row vectors, e.g.\
+\begin{equation*}
+X = \begin{pmatrix}X_1 & X_2 & ... & X_{15} & X_{16} \end{pmatrix},
+\end{equation*}
+where $X_i \in \Ztwo$.
+Favoring typical convention found in the literature, $X_1$ is the MSB \cite{Heys2002_Tutorial}.
+This notation allows us to easily represent linear approximations in the form
+\begin{equation*}
+\left( \bigoplus\limits_{i=1}^{16} X_i \right) = \left( \bigoplus\limits_{i=1}^{16} Y_i \right)
+\end{equation*}
+or equivalently
+\begin{equation*}
+\left( \bigoplus\limits_{i=1}^{16} X_i \right) \oplus \left( \bigoplus\limits_{j=1}^{16} Y_j \right) = 0.
+\end{equation*}
+
+The ideal \emph{linear probability} $p$ that such an approximation holds true is exactly equal to 1/2.
+We are concerned with deviations from this ideal probability, known as the \emph{linear bias}, $\epsilon$. 
+Clearly, $\epsilon = p - 1/2$.
+We found the maximum linear bias of our particular S-box to be $\epsilon_{L,max} = 2^{-8}$ using the same program as previously described.
+
+S-boxes that are involved in a linear approximation of a system are called \emph{linearly active} S-boxes.
+A linear approximation across rounds is called a \emph{linear trail}; it involves several linearly active S-boxes.
+Our goal, as with differential cryptanalysis, consists of trying to maximize the minimum number of linearly active S-boxes.
+The \emph{linear branch number} $\mathcal{B}_L$ is the minimum number of linearly active S-boxes across two rounds of our permutation.
+As with differential cryptanalysis, it depends solely on our mixer.
+
+\subsection{Algorithm Resistance}
+Recall that we have verified via SAT solver analysis that the differential branch number of our mixer is three.
+In \cite{Daemen2002_DesignOfRijndael}, Daemen and Rijmen prove the following result: the linear branch number of a linear transformation specified by multiplication by a matrix $M$ is equal to the differential branch number of the linear transformation specified by the transpose of that matrix.
+Therefore, a sufficient condition for the differential and linear branch numbers to be equal is that the matrix is symmetric.
+Our matrix is symmetric, and therefore we know $\mathcal{B}_D = \mathcal{B}_L$ without the need for further analysis.
+
+The final step to prove the resistance of our algorithm against linear cryptanalysis involves determining the linear bias of two complete rounds of our permutation.
+To combine linear biases, we use Matsui's Piling-Up Lemma from \cite{Matsui1993_Linear}:
+\begin{equation*}
+\epsilon = 2^{n-1} \prod\limits_{i = 1}^n \epsilon_i,
+\end{equation*}
+where $n = 3$ is the number of linearly active S-boxes across two rounds and $\epsilon_i = \epsilon_{L,max} = 2^{-8}$ is the worst case linear bias of those S-boxes.
+Note that we need not consider the mixer since, being a linear function, it must have a maximum linear probability $p_{mix} = 1$, corresponding to a maximum bias of $\epsilon_{mix} = 1/2$. This gets cancelled out.
+Also from Matsui's paper, we know that the number of plaintext/ciphertext pairs (again referred to loosely as the \emph{complexity}) needed to exploit the overall bias $\epsilon$ is approximately $\epsilon^{-2}$.
+Using this information, we constructed Table~\ref{tab:LinearBiases}.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{c|c|c}
+Rounds & Worst Case Linear Bias & PT/CT Pairs Required \\
+\hline
+$2$  & $2^{-22}$  & $2^{44}$  \\
+$4$  & $2^{-44}$  & $2^{88}$  \\
+$6$  & $2^{-66}$  & $2^{132}$ \\
+$8$  & $2^{-88}$  & $2^{176}$ \\
+$10$ & $2^{-110}$ & $2^{220}$ \\
+$12$ & $2^{-132}$ & $2^{264}$ \\
+$14$ & $2^{-154}$ & $2^{308}$ \\
+$16$ & $2^{-176}$ & $2^{352}$ \\
+\end{tabular}
+\caption{Worst case linear biases and linear attack complexities over increasing rounds}
+\label{tab:LinearBiases}
+\end{table}
+
+Therefore the complexity of a linear attack exceeds the complexity of a brute force search of a $128$-bit keyspace at six rounds.
+To increase our security margin significantly, we require $10$ rounds for a $128$-bit key.
+For a $256$-bit key, $16$ rounds are required to achieve a similar security margin.
+
+%------------------------------
+% Section: Differential and Linear Cryptanalysis Variants
+%------------------------------
+\section{Differential and Linear Cryptanalysis Variants}
+There have been numerous efforts to extend on the foundations of differential and linear cryptanalysis over the years in order to produce attacks that are potentially more powerful.
+We present a brief overview of the some of the most prevalent variants here.
+
+\subsection{Differential-Linear Cryptanalysis}
+As the name suggests, differential-linear cryptanalysis is a combination of differential and linear cryptanalysis in which a differential trail is followed by a linear trail.
+It was introduced in 1994 by Langford and Hellman \cite{Langford1994_DifferentialLinear}, who demonstrated a differential-linear attack on 8-round DES that requires far fewer plaintexts than previous attacks.
+The attack is based on a differential trail over the first three rounds that holds with probability $1$ followed by a high magnitude bias linear approximation for the following rounds.
+While it was a requirement for this attack to use a unity probability differential trail over the initial rounds, Biham et~al.\ \cite{Biham2002_Enhancing} were able to generalize differential-linear attacks in 2002 to differential trails with probability less than $1$. 
+Recall from Chapter~\ref{ch:Intro} that these results were used in 2007 by Wu and Praneel \cite{Wu2007_PhelixAttack} to break the stream cipher Phelix, which had promising applications to authenticated encryption prior to this.
+
+We believe that any differential-linear attack on our permutation $f$ would be limited to a few rounds at best due to the extremely low maximum differential probability of our S-box.
+For example, our absolute worst case differential probability over the first two rounds is bounded by $2^{-57}$.
+Even without considering the linear approximation that must follow this, the complexity of such an attack is already approaching the limits of feasibility after these two rounds.
+
+\subsection{Truncated and Higher-Order Differentials}
+Both truncated and higher-order differential attacks were introduced in Knudsen's 1995 paper on the subject \cite{Knudsen1995_Truncated}.
+Knudsen shows that there exist systems which are provably secure against regular differential attacks yet susceptible to truncated or higher-order differential attacks.
+
+A differential in which only some of the bits are known is called a \emph{truncated differential}.
+The idea is that because fewer bits are being estimated, the propagation should be easier. 
+However, the propagation of truncated differentials relies largely on \emph{strong alignment} of the system.
+For a complete treatment of this, we refer to the \Keccak team's excellent coverage of the subject in \cite{Bertoni2011_Alignment}.
+We note only that a particular conclusion is that bit-oriented transformations have weak alignment, thus truncated differentials become extremely difficult to propagate.
+Because of the effect of our bitwise permutation and the very small differential probabilities of our S-box, we believe that any attack based on truncated differentials would not exceed a few rounds of our underlying permutation at worst.
+
+A \emph{higher-order differential} is a differential that consists of several differences.
+It could be thought of as a difference of differences.
+One of the conclusions of \cite{Knudsen1995_Truncated} is that a higher-order differential attack will only be effective against a system of sufficiently low algebraic degree.
+This is why, for example, such attacks have yet to be effective against AES.
+Because of this, as we will elaborate on in the next section, we believe that our system will be resistant to higher-order differential attacks.
+
+%------------------------------
+% Section: Linear Cryptanalysis
+%------------------------------
+\section{Algebraic Attacks}
+Differential and linear cryptanalysis take a probabilistic approach to estimating the behavior of a system.
+In contrast, algebraic attacks take a deterministic approach in that they aim to find mathematical models of a system that hold with unity probability.
+For example, in 2001 Ferguson et~al.\ \cite{Ferguson2001_AlgebraicRijndael} introduced an elegant and complete algebraic representation of AES.
+The ability to create such a simple mathematical representation of the cipher initially raised alarm throughout the cryptographic community.
+However, the security of AES seems to be uncompromised since we believe it is far too difficult to solve such an algebraic system.
+We discuss a few potentially relevant algebraic attacks here that follow a similar idea.
+
+\subsection{XL and XSL Attacks}
+There has been some ongoing work related to reducing the cryptanalysis of cryptosystems to the solution of multivariate quadratic (MQ) equations.
+The first attempted attack to leverage this work, called the eXtended Linearization (XL) attack, was introduced by Courtois et~al.\ in 2000 \cite{Courtois2000_XL}.
+This attack works by transforming a system of MQ equations into a much larger overdefined system of linear equations.
+The idea is that while we are bad at solving nonlinear systems, linear systems are quite easy for us to solve.
+However, XL is still an impractical attack because after linearization the system of equations is simply too large to solve.
+
+In 2002, Courtois et~al.\ \cite{Courtois2002_XSL} introduced the eXtended Sparse Linearization (XSL) attack as an attempt to improve on XL.
+This attack leverages the fact that the complexity of XL drops significantly if the MQ system is sparse and regularly structured in addition to being overdefined.
+The authors shows that for Serpent (an AES candidate) and AES itself, the MQ system does end up satisfying these properties.
+Still, no practical attack has risen out of these efforts due to the fact that the complexity of such an attack remains computationally infeasible.
+
+Until there is reason to believe otherwise, it seems that these algebraic attacks would be highly ineffective against our permutation.
+Even if there were a practical XSL attack demonstrated on AES, which all literature indicates as highly implausible right now, the much larger size of our S-box and therefore the much higher algebraic complexity (see \cite{Wood2013_SboxThesis}) leads us to conjecture that our permutation would still be resistant.
+
+\subsection{Cube Attacks}
+Cube attacks were fairly recently introduced by Dinur and Shamir in 2008 \cite{Dinur2009_Cube}.
+This cryptanalysis method is intriguing because it can be applied to cryptosystems which are treated as a black box; that is, the internal structure of the system does not need to be known.
+For an attack to work, at least one output bit must be able to be represented by a polynomial of relatively low degree.
+Cube attacks have had minor success.
+For example, Lathrop demonstrated a successful attack on four rounds of a $224$-bit hash variant of \Keccak in his 2009 thesis on the subject \cite{Lathrop2009_CubeAttacks}.
+He estimates that this attack could be practical up to seven rounds.
+
+Given that \Keccak is also based on the sponge construction, it may be fair to question whether cube attacks are applicable to our algorithm.
+However, \Keccak is unique in the sense that its round function has a very low degree of only two.
+Systems like AES which use sufficiently large S-boxes, as ours does, do not generally have the property that output bits can be represented as polynomials of small degree.
+In fact, the degrees of any such polynomials are typically extremely high \cite{Schneier2008_CubeAttacks}.
+Therefore we conclude that our algorithm is immune to cube attacks.
+
+%------------------------------
+% Section: Other Cryptanalysis
+%------------------------------
+\section{Other Cryptanalysis}
+There are several other attacks that are very dissimilar from both differential and linear attacks as well as algebraic attacks.
+We present the two that we believe to be the most prevalent and relevant in this section.
+
+\subsection{Slide Attacks}
+Slide attacks were introduced in 1999 by Biryukov and Wagner \cite{Biryukov1999_SlideAttacks}.
+A slide attack has the interesting property that it is independent of the number of rounds of the system.
+Therefore the common method of having a high number of simple rounds to provide security is no longer valid if proper care is not taken.
+These attacks work by exploiting the \emph{self-similarity} of a system with respect to the behavior of its rounds.
+For example, a block cipher with a periodic key schedule is at risk because the groups of rounds belonging to a period of the key schedule can be abstractly considered as ``larger rounds'' within the slide attack methodology.
+This similarity is then exploited.
+
+One of the key advantages that we repeatedly mention in this thesis is that the sponge and duplex constructions do not require a key schedule since keys are treated the same as any other input data.
+Therefore, we do not even have to consider any weaknesses that may be presented by poor subkey generation.
+For unkeyed permutation design, one of the simplest methods to prevent against slide attacks is to XOR round constants into the state every round.
+This disrupts self-similarity across rounds as long as the round constants never repeat, which ours do not.
+In addition, our round constants are completely independent of each other and no relation can be drawn between them except for the fact that they are all generated by the SHA-3 hashing function.
+These properties easily lead to the conclusion that our permutation $f$ is not susceptible to slide attacks.
+
+\subsection{Integral Attacks}
+Integral cryptanalysis was initially presented in 1997 by Daemen et~al.\ \cite{Daemen1997_Square} as a dedicated attack on the block cipher Square (interestingly, in the same paper as the initial specification of Square).
+As such, it is sometimes called the Square attack.
+However, it has since been extended to attacks on other systems. 
+
+Integral cryptanalysis analyzes the propagation of special sets (or multisets) of chosen plaintexts.
+In the basic version, all of the bitstrings belonging to a set are related by the property that most of the bits are held constant while a contiguous block is varied through all $2^n$ possibilities, where $n$ is the length of the block. 
+For example, if $n = 8$ (a byte), then a set will contain $2^8 = 256$ unique bitstrings that iterate through all possibilities of values for that byte.
+These bitstrings necessarily have the property that the bitwise XOR sum of the varied bytes will be equal to zero.
+It is the behavior of this sum that is analyzed as it propagates throughout the system, and any significant non-random behavior can lead to an attack.
+
+While the classical form of this attack has even been extended to AES with some success \cite{Ferguson2001_Improved}, we argue that our bitwise permutation step eliminates any chance of success against our underlying $f$ function. 
+This technique will clearly break down for systems that are not entirely block-based, so our hybrid design approach of using both bit-oriented and word-oriented operations excels here.
+Indeed, this is the same argument the \Keccak team initially makes in \cite{Bertoni2011_KeccakReference}.
+
+Z'aba et.~al\ generalized integral attacks in 2008 to bit-oriented systems with some success \cite{ZAba2008_BitPatternIntegralAttacks}. 
+While arguably not as powerful as the basic block-oriented form of the attack, it has, for example, broken up to five rounds of PRESENT with only 80 chosen plaintexts compared to the $2^{20}$ required for a differential attack.
+However, they note at the conclusion of their paper that bit-oriented integral attacks simply do not extend, even with low probability, past the first few rounds of such systems.
+This is in great contrast to differential and linear cryptanalysis, which always extend but with greatly reduced probability.
+The exact resistance of our algorithm to this new bit-oriented integral attack would have to be studied more in depth, but given the aforementioned results, we believe that it is highly unlikely that an integral attack would extend past the initial rounds of our permutation.
+

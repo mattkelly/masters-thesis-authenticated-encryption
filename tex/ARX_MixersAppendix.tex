@@ -1,0 +1,30 @@
+\chapter{ARX-Based Mixers}
+\label{appx:ARX_Mixers}
+As part of the design process for the cryptosystem described in this thesis, many ARX-based mixers were analyzed before deciding to switch to a mixer based on matrix multiplication in a Galois field.
+None of these ARX-based mixers were able to increase the linear and differential branch numbers from two to three, which is one of our requirements.
+For completeness, we enumerate all of the mixers we analyzed here. 
+
+One of the mixers is based on the ARX structure used in Threefish, the block cipher used within SHA-3 candidate Skein \cite{Ferguson2010_SkeinReference}. 
+Another is based on the recently released lightweight block cipher Speck that was created by the National Security Agency \cite{Beaulieu2013_Speck}. 
+From these ideas, more complex ARX structures were constructed and analyzed.
+
+In all diagrams shown here, the $\mathbf{ROT}$ operation represents all possible nontrivial left and right rotations on a single word. 
+Mixers corresponding to every single combination of rotations were analyzed.
+The $\boxplus$ symbol denotes addition modulo $2^{16}$.
+It is a nonlinear operation due to effect of the carry bit.
+The $\oplus$ symbol denotes XOR, as usual.
+
+\begin{figure}[ht]
+\centering
+\input{tex/MixerThreefish.tikz.tex}
+\caption{Candidate mixer inspired by Threefish}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\input{tex/MixerSpeck.tikz.tex}
+\caption{Candidate mixer inspired by Speck}
+\end{figure}
+
+\input{tex/MixersCustom.tex}
+
