@@ -1,0 +1,24 @@
+%-----------------------------------
+% SECTION: Conclusions 
+%-----------------------------------
+\section{Conclusions}
+In this paper we presented a customizable authenticated encryption algorithm based on the duplex construction that is targeted for hardware implementation.
+We believe this algorithm to be highly secure against known attacks.
+In particular, we provided proof of resistance against linear and differential attacks as well as solid reasoning for resistance against algebraic attacks.
+
+\subsection{Future Work}
+There are two primary areas for further work relating to the algorithm presented here.
+As with all cryptosystems, further cryptanalysis is always appreciated.
+In particular, it would be interesting to determine the best possible linear and differential trails across several rounds.
+
+The other area of work is the hardware implementation of the algorithm described here.
+In particular, quantitative results relating to the resource usage for an FPGA implementation are of great interest.
+We are confident that our permutation is designed in such a way that a relatively small amount of resources will be required.
+
+\begin{comment}
+In addition to further cryptanalysis, more analysis should be performed on similar $2 \times 2$ matrices so that a list of drop-in replacements within our security margin is readily available.
+It is desirable to perform statistical analysis on the remaining $16$-bit S-boxes provided by Wood.
+Knowing their maximum linear biases and differential probabilities would likely allow them to act as drop-in replacements.
+Until then, we have provided users with references to the tools required for such analysis.
+\end{comment}
+

@@ -1,0 +1,82 @@
+%------------------------------
+% SECTION: Preliminary Cryptanalysis
+%------------------------------
+\section{Comments on Cryptanalysis}
+\label{sec:Cryptanalysis}
+The duplex construction has been shown to be secure against generic attacks by the \Keccak team \cite{Bertoni2011_SpongeFunctions}.
+Therefore it is sufficient for us to assess only the security of the underlying sponge permutation $f$.
+
+We provide an overview of our preliminary cryptanalysis here.
+Emphasis is placed on the most general and prevalent forms of attacks.
+Resistance against these techniques should result in resistance against many other less general techniques.
+Our aim is to provide intuitive explanations of prevalent methods and simply explain why our permutation should be resistant.
+Further cryptanalysis, as with all cryptosystems, is always welcome for future work.
+
+%------------------------------
+% Differential Cryptanalysis
+%------------------------------
+\subsection{Differential Cryptanalysis}
+Differential cryptanalysis was publicly introduced by Biham and Shamir in 1991 in their landmark paper on the subject \cite{Biham1991_Differential}.
+Since then, it has been applied with varying degrees of success to a great number of cryptosystems.
+As such, it is a fundamental requirement of symmetric key cryptosystem design to prove resistance to differential cryptanalysis.
+
+To determine the resistance of our algorithm to differential cryptanalysis, we first have to determine the maximum differential probability of our S-box.
+We determined this value to be $p_{D,max} = 2^{-14}$ using an S-box evaluation program called \texttt{Eval16BitSbox} \cite{Kaminsky2014_BlockCipherAnalysis} written with Kaminsky's Parallel Java 2 library \cite{Kaminsky2014_PJ2}.
+
+Next, it is necessary to determine the differential branch number of a round.
+For this, we only need to analyze the mixer. 
+We purposefully designed a mixer with differential branch number equal to three, meaning that minimally three S-boxes will be differentially active between two rounds.
+This is in fact the maximum achievable branch number for a transformation defined by multiplication by a $2 \times 2$ matrix.
+To verify this, we used a SAT solver called CryptoMiniSat \cite{Soos2014_CryptoMiniSat}.
+This SAT solver takes as input a Boolean equation in conjunctive normal form (CNF) and determines if it is \emph{satisfiable}; that is, if it can ever produce an output of `$1$' for any set of input values.
+Our CNFs were generated using Kaminsky's \texttt{SatProblem} Java class \cite{Kaminsky2014_BlockCipherAnalysis}.
+
+The CNFs generated are unsatisfiable if and only if the mixer has differential branch number equal to three since it answers the following question: \emph{is it possible to have a difference in only one input and only one output?}
+Through SAT solver analysis we determined that this is not possible for our mixer; that is, if there is a non-zero difference in only one input, there must be a non-zero difference in each output.
+In the event that there is a difference in both inputs, there may be a difference in only one output.
+This still leads to a differential branch number of three since two S-boxes must have been active in the previous round to lead to those two input differences.
+The probability of a difference in either output is $p_{D,out} = 2^{-15}$.
+
+With all of this information, it is possible to calculate the number of rounds needed for resistance to differential attacks.
+The worst-case probability of successfully propagating a difference over two rounds is given by
+\begin{equation*}
+(p_{D,max})^{\mathcal{B}_D} \cdot p_{D,out},
+\end{equation*}
+where $\mathcal{B}_D = 3$ is the differential branch number.
+Extending on this, we found that the complexity of a differential attack exceeds the complexity of a brute force attack at six rounds for a $128$-bit key.
+To increase our security margin significantly, we require $10$ rounds for a $128$-bit key. 
+For a $256$-bit key, $16$ rounds are required to achieve a similar security margin.
+
+%------------------------------
+% Linear Cryptanalysis
+%------------------------------
+\subsection{Linear Cryptanalysis}
+Linear Cryptanalysis was first introduced by Matsui in 1993 in his landmark paper, \cite{Matsui1993_Linear}.
+As with differential cryptanalysis, it is a fundamental requirement of symmetric key cryptosystem design to prove resistance against linear attacks.
+
+Recall that we have verified via SAT solver analysis that the differential branch number of our mixer is three.
+In \cite{Daemen2002_DesignOfRijndael}, Daemen and Rijmen prove the following result: the linear branch number of a linear transformation specified by multiplication by a matrix $M$ is equal to the differential branch number of the linear transformation specified by the transpose of that matrix.
+Therefore, a sufficient condition for the differential and linear branch numbers to be equal is that the matrix is symmetric.
+Our matrix is symmetric, and therefore we know $\mathcal{B}_D = \mathcal{B}_L$ without the need for further analysis.
+
+The final step to prove the resistance of our algorithm against linear cryptanalysis involves determining the linear bias of two complete rounds of our permutation.
+To combine linear biases, we use Matsui's Piling-Up Lemma from \cite{Matsui1993_Linear}:
+\begin{equation*}
+\epsilon = 2^{n-1} \prod\limits_{i = 1}^n \epsilon_i,
+\end{equation*}
+where $n = 3$ is the number of linearly active S-boxes across two rounds and $\epsilon_i = \epsilon_{L,max} = 2^{-8}$ is the worst case linear bias of those S-boxes.
+Also from Matsui's paper, we know that the number of plaintext/ciphertext pairs (again referred to loosely as the \emph{complexity}) needed to exploit the overall bias $\epsilon$ is approximately $\epsilon^{-2}$.
+Using this information, we determined that the complexity of a linear attack exceeds the complexity of a brute force search of a $128$-bit keyspace at six rounds.
+To increase our security margin significantly, we require $10$ rounds for a $128$-bit key.
+For a $256$-bit key, $16$ rounds are required to achieve a similar security margin.
+
+\subsection{Algebraic Attacks}
+Differential and linear cryptanalysis take a probabilistic approach to estimating the behavior of a system.
+In contrast, algebraic attacks take a deterministic approach in that they aim to find mathematical models of a system that hold with unity probability.
+For example, in 2001 Ferguson et~al.\ \cite{Ferguson2001_AlgebraicRijndael} introduced an elegant and complete algebraic representation of AES.
+The ability to create such a simple mathematical representation of the cipher initially raised alarm throughout the cryptographic community.
+However, the security of AES seems to be uncompromised since we believe it is far too difficult to solve such an algebraic system - the algebraic complexity of the AES S-box is too high.
+
+Until there is reason to believe otherwise, it seems that these algebraic attacks would be highly ineffective against our permutation.
+Even if there were a practical algebraic attack demonstrated on AES, which all literature indicates as highly implausible right now, the much larger size of our S-box and therefore the much higher algebraic complexity (see \cite{Wood2013_SboxThesis}) leads us to conjecture that our permutation would still be resistant.
+

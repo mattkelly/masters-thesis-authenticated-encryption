@@ -1,0 +1,131 @@
+\documentclass[11pt,american]{article}
+\usepackage[letterpaper,hmargin=1.25in,vmargin=1.25in]{geometry}
+
+\usepackage[utf8]{inputenc}
+\usepackage[mathscr]{euscript}
+\usepackage{authblk}
+\usepackage{times}
+\usepackage{babel}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{verbatim} % For comment env
+\usepackage{enumerate}
+\usepackage{afterpage}
+\usepackage{hyperref} % For internal links
+\usepackage{nag}      % Warn about old packages and commands
+\usepackage{fixltx2e} % Fix misc. LaTeX stuff
+\usepackage{xspace}   % Fix spacing at end of macros
+\usepackage{array}
+\usepackage{etoolbox}
+\usepackage{multirow}
+\usepackage{rotating}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{caption}
+\usepackage{float}    % 'H' table placement option
+
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\setcounter{MaxMatrixCols}{16}
+
+\newenvironment{smallpmatrix}
+  {\left(\begin{smallmatrix}}
+  {\end{smallmatrix}\right)}
+
+% For now, to help organize
+\setcounter{tocdepth}{5}
+\newcommand{\TODO}{\textcolor{red}{\textbf{TODO}}\xspace}
+
+\newcommand{\Ztwo}{\ensuremath{\mathbb{Z}_2}\xspace}
+\newcommand{\Zn}{\ensuremath{\mathbb{Z}_n}\xspace}
+\newcommand{\gftwo}{\ensuremath{\mathrm{GF}(2)}\xspace}
+\newcommand{\gfsixteen}{\ensuremath{\mathrm{GF}(2^{16})}\xspace}
+\newcommand{\gfwithpoly}{\ensuremath{\text{GF}(2^{16}) / \left\langle \ourpoly \right\rangle}\xspace}
+
+\newcommand{\pval}{\textit{P-value}\xspace}
+\newcommand{\pvals}{\textit{P-values}\xspace}
+
+\newcommand{\Keccak}{\textsc{Keccak}\xspace}
+\newcommand{\SpongeWrap}{\textsc{SpongeWrap}\xspace}
+
+\newcommand{\drawxTimes}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (1em and 1em) node {$x*$};
+}
+\newcommand{\drawXOR}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (1em and 1em);
+  \draw[line width=2.5pt] (#1-.4, #2) -- (#1+.4, #2);
+  \draw[line width=2.5pt] (#1, #2-.4) -- (#1, #2+.4);
+}
+\newcommand{\drawAdder}[2]{% top left: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) rectangle (#1+1, #2-1);
+  \draw[line width=2.5pt] (#1, #2-.5) -- (#1+1, #2-.5);
+  \draw[line width=2.5pt] (#1+.5, #2-1) -- (#1+.5, #2);
+}
+\newcommand{\drawRot}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (2em and 1em) node {$\mathbf{ROT}$};
+}
+\newcommand{\drawMixerInputs}{
+  \draw[fill=gray!30] (0,16) rectangle (2,15) node[midway] {$A$};
+  \draw[fill=gray!30] (4,16) rectangle (6,15) node[midway] {$B$};
+}
+\newcommand{\drawMixerOutputs}[1]{%y offset from top
+  \draw[fill=gray!30] (0,16-#1) rectangle (2,15-#1) node[midway] {$A'$};
+  \draw[fill=gray!30] (4,16-#1) rectangle (6,15-#1) node[midway] {$B'$};
+}
+
+% Aliases for readability
+\let\from=\colon
+\let\to=\rightarrow
+
+\title{Customizable Sponge-Based Authenticated Encryption \\ Using $16$-bit S-boxes}
+
+\author[1]{Matthew Kelly}
+\author[2]{Alan Kaminsky}
+\author[1]{Marcin {\L}ukowiak}
+\author[3]{\authorcr Michael Kurdziel}
+\author[2]{Stanis{\l}aw Radziszowski}
+\affil[1]{\footnotesize Department of Computer Engineering, Rochester Institute of Technology}
+\affil[2]{Department of Computer Science, Rochester Institute of Technology}
+\affil[3]{Harris Corporation, Rochester, NY}
+
+\date{October 2014}
+
+\begin{document}
+
+\maketitle
+%\footnote{\TODO Harris acknowledgement?}
+
+\begin{abstract}
+Authenticated encryption (AE) is a symmetric key cryptographic scheme that aims to provide both confidentiality and data integrity. 
+There are many AE algorithms in existence today.
+However, they are often far from ideal in terms of efficiency and ease of use.
+For this reason, there is ongoing effort to develop new AE algorithms that are secure, efficient, and easy to use.
+
+The sponge construction is a relatively new cryptographic primitive that has gained popularity since the sponge-based \Keccak algorithm won the SHA-3 hashing competition.
+The duplex construction, which is closely related to the sponge, provides promising potential for secure and efficient authenticated encryption.
+
+In this paper we introduce a novel authenticated encryption algorithm based on the duplex construction that is targeted for hardware implementation.
+We also provide explicit customization guidelines for users who desire unique authenticated encryption solutions within our security margin.
+Furthermore, our substitution step uses $16 \times 16$ AES-like S-boxes, which are novel because they are the largest bijective S-boxes to be used by an encryption scheme in the literature and are still efficiently implementable in both hardware and software.
+\end{abstract}
+
+\input{tex/IntroSection.tex}
+\input{tex/SpongeAndDuplexSection.tex}
+\input{tex/AlgorithmSpecSection.tex}
+\input{tex/CryptanalysisSection.tex}
+\input{tex/ConclusionsSection.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\linespread{1}
+\selectfont
+\bibliographystyle{ieeetr}
+\bibliography{conference_paper}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
+

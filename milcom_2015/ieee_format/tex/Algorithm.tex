@@ -1,0 +1,40 @@
+\begin{figure}
+\noindent\fbox{%
+\begin{varwidth}{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+\begin{algorithmic}[1]
+%\Require $|S|$ = 512
+%\LineComment{Testing}
+\Input{$S$} \Comment{\emph{The state (modified in place)}} 
+\State $N_r \gets 10$ \Comment{\emph{Number of rounds}}
+\State $N_b \gets 512$ \Comment{\emph{Number of bits in a state}}
+\State $N_w \gets 32$ \Comment{\emph{Number of $16$-bit words in a state}}
+
+\For{$r \gets 1,N_r$}
+  \For{$x \gets 0, N_w - 1$} \Comment{\emph{Substitution Step}}
+    \State $S.\mathrm{words}[x] \gets \mathbf{sbox}(S.\mathrm{words}[x])$
+  \EndFor
+
+  \State $\hat{S} \gets S.\mathrm{copy}()$
+
+  % Bitwise Permutation
+  \For{$x \gets 0, N_b - 1$} \Comment{\emph{Bitwise Permutation Step} $\pi$}
+    \State $y \gets 31 \cdot x + 15 \pmod{512}$ 
+    \State $S.\mathrm{bits}[x] \gets \hat{S}.\mathrm{bits}[y]$
+  \EndFor
+
+  \For{$x \gets 0, N_w - 1$} \Comment{\emph{Mix Step} M}
+    \State $(S.\mathrm{words}[x], S.\mathrm{words}[x+1])$
+    \State \indent $\gets \mathbf{mix}(S.\mathrm{words}[x],S.\mathrm{words}[x+1])$
+  \EndFor
+
+  % Add RC
+  \State $S \gets S \oplus RC_r$ \Comment{\emph{Add Round Constant Step}}
+\EndFor
+\end{algorithmic} 
+\end{varwidth}
+}
+
+\caption{Permutation $f$ algorithm for a $128$-bit key}
+\label{PermutationAlgorithm}
+\end{figure}
+

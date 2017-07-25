@@ -1,0 +1,22 @@
+It is common knowledge that encryption is a useful tool for providing confidentiality.
+Authentication, however, is often overlooked.
+Authentication provides data integrity; it helps ensure that any tampering with or corruption of data is detected.
+It also provides assurance of message origin.
+Authenticated encryption (AE) algorithms provide both confidentiality and integrity / authenticity by processing plaintext and producing both ciphertext and a Message Authentication Code (MAC).
+It has been shown too many times throughout history that encryption without authentication is generally insecure.
+This has recently culminated in a push for new authenticated encryption algorithms.
+
+There are several authenticated encryption algorithms in existence already.
+However, these algorithms are often difficult to use correctly in practice.
+This is a significant problem because misusing AE constructions can result in reduced security in many cases.
+Furthermore, many existing algorithms have numerous undesirable features.
+For example, these algorithms often require two passes of the underlying cryptographic primitive to yield the ciphertext and MAC.
+This results in a longer runtime.
+It is clear that new easy-to-use, single-pass, and highly secure AE constructions are needed.
+Additionally, a new AE algorithm is needed that meets stringent requirements for use in the military and government sectors.
+
+This thesis explores the design and cryptanalysis of a novel, easily customizable AE algorithm based on the duplex construction.
+Emphasis is placed on designing a secure pseudorandom permutation (PRP) for use within the construction.
+A survey of state of the art cryptanalysis methods is performed and the resistance of our algorithm against such methods is considered.
+The end result is an algorithm that is believed to be highly secure and that should remain secure if customizations are made within the provided guidelines.
+

@@ -1,0 +1,34 @@
+\begin{tikzpicture}[xscale=0.8,yscale=0.8,>=latex,ultra thick]
+% Reference grid (temporary)
+%\draw[help lines] (0,0) grid (16,16);
+
+% Inputs
+\draw[fill=gray!30] (0,15) rectangle (2,14) node[midway] {$A$};
+\draw[fill=gray!30] (10,15) rectangle (12,14) node[midway] {$B$};
+
+\draw[->] (1,14) to (1, 11.5);
+\draw[->] (1,13) to (2.5, 13);
+
+\draw[->] (11,14) to (11, 11.5);
+\draw[->] (11,13) to (9.5, 13); 
+
+\drawxTimes{3}{13}
+\drawxTimes{9}{13}
+
+\drawXOR{1}{11}
+\drawXOR{11}{11}
+\drawXOR{7}{11}
+
+\draw[->] (3.5,13) to (4,13) to (5,11) to (6.5,11);
+\draw[->] (8.5,13) to (5,13) to (4,11) to (1.5,11); 
+\draw[->] (7,13) to (7,11.5);
+\draw[->] (7.5,11) to (10.5,11);
+
+\draw[->] (1,10.5) to (1,9.5);
+\draw[->] (11,10.5) to (11,9.5);
+
+% Outputs
+\draw[fill=gray!30] (0,9.5) rectangle (2,8.5) node[midway] {$A'$};
+\draw[fill=gray!30] (10,9.5) rectangle (12,8.5) node[midway] {$B'$};
+
+\end{tikzpicture}

@@ -1,0 +1,40 @@
+\begin{algorithm}
+\caption*{\textbf{Algorithm} Permutation $f$ ($128$-bit key)}
+\label{alg:Algorithm}
+\begin{algorithmic}
+%\Require $|S|$ = 512
+\State $N_r \gets 10$
+\State $\hat{S} \gets S.\mathrm{copy}()$
+\For{$r \gets 1,N_r$}
+
+  % Subsitution
+  %\Comment{Substitution Step}
+  %\For{$x \gets 0 \mathbf{\ to\ } |S| \mathbf{\ step\ } 16$}
+    %\State $S_{x,x+15} \gets \mathbf{Sbox}(S_{x,x+15})$
+    %\State $x \gets x + 15$
+  %\EndFor
+  \For{$x \gets 0 \mathbf{\ to\ } 31$}
+    \State $S.\mathrm{words}[x] \gets \mathbf{sbox}(S.\mathrm{words}[x])$
+  \EndFor
+
+  % Bitwise Permutation
+  %\For{$x \gets 0 \mathbf{\ to\ } |S|-1$}
+    %\State $y \gets 31 \cdot x + 15 \pmod{|S|}$ 
+    %\State $S_{x} \gets S'_{y}$
+  %\EndFor
+  \For{$x \gets 0 \mathbf{\ to\ } 511$}
+    \State $y \gets 31 \cdot x + 15 \pmod{512}$ 
+    \State $S.\mathrm{bits}[x] \gets \hat{S}.\mathrm{bits}[y]$
+  \EndFor
+
+  \For{$x \gets 0 \mathbf{\ to\ } 31$} 
+    \State $(S.\mathrm{words}[x], S.\mathrm{words}[x+1])
+      \gets \mathbf{mix}(S.\mathrm{words}[x],S.\mathrm{words}[x+1])$
+  \EndFor
+
+  % Add RC
+  \State $S \gets S \oplus RC_r$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+

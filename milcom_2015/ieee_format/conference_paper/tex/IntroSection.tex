@@ -1,0 +1,26 @@
+%------------------------------
+% SECTION: Introduction
+%------------------------------
+\section{Introduction}
+The overarching goal of symmetric key cryptography is to enable people to communicate privately over an insecure channel in the presence of adversaries.
+Two fundamental requirements for achieving this goal are encryption and authentication.
+Encryption provides \emph{confidentiality} while authentication provides data \emph{integrity} and assurance of message origin \cite{Stinson2006_CTAP}.
+
+Many authenticated encryption algorithms are in existence today, but they are often unsatisfactory in terms of performance, security, or ease of use.
+Some algorithms require two passes per block of plaintext to encrypt and authenticate.
+This is generally undesirable because it often means a much slower algorithm.
+Other algorithms have been shown to be insecure or difficult to use properly.
+Many algorithms, such as the ones based on generic composition, require two unique and unrelated keys.
+This should be avoided when possible because key management is a difficult problem \cite{Ferguson2010_CryptographyEngineering}.
+
+Furthermore, a new authenticated encryption algorithm is needed that meets the stringent requirements of government and military applications.
+Such algorithms are not typically in the public domain.
+The goal of this is partially to reduce or eliminate academic interest in cryptanalyzing the algorithm and publishing results \cite{Kurdziel2002_BaselineRequirements}.
+
+For this reason, there is a need for a customizable authenticated encryption algorithm.
+This algorithm should remain secure as long as customizations are made within certain guidelines.
+The result is an algorithm which can be made unique on a per-user or per-application basis without the effort of cryptanalyzing every specific instantiation.
+We present a customizable AE algorithm here that is based on the duplex construction and is built around an iterated permutation that uses $16 \times 16$ bijective S-boxes. 
+These large S-boxes introduce much higher non-linearity and algebraic complexity to the permutation than what could be achieved with smaller S-boxes of a similar structure (e.g.\ the AES S-boxes).
+They are also very efficient to implement in both hardware and software because they are based on algebraic operations in a finite field rather than a random mapping \cite{Wood2013_SboxThesis}.
+
