@@ -1,0 +1,19 @@
+\begin{tikzpicture}[xscale=0.8,yscale=0.8,>=latex,ultra thick]
+% Reference grid (temporary)
+%\draw[help lines] (0,0) grid (24,24);
+
+\draw[->] (1,24) to (1,22) to (0,21) to (0, 20)
+    to (16, 20) to (16, 16);
+\foreach \i in {2,...,16} {
+    \draw[->] (\i,24) to (\i,22) to (\i-1,21) to (\i-1, 16);
+}
+\draw[->] (10.3,20) to (10.6,18.2);
+\draw[->] (11,20) to (11,18.4);
+\drawXOR{11}{18}
+\draw[->] (12.3,20) to (12.6,18.2);
+\draw[->] (13,20) to (13,18.4);
+\drawXOR{13}{18}
+\draw[->] (13.3,20) to (13.6,18.2);
+\draw[->] (14,20) to (14,18.4);
+\drawXOR{14}{18}
+\end{tikzpicture}

@@ -1,0 +1,185 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Section: Cryptanalysis 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Cryptanalysis}
+\begin{frame}
+\frametitle{Types of Cryptanalysis}
+\begin{itemize}
+  \item Secure against generic attacks
+  \item Need to analyze permutation
+  \item Two major attack types:
+  \begin{enumerate}
+    \item Differential and linear attacks
+    \item Algebraic attacks
+  \end{enumerate}
+  \item In addition: ``other'' attacks, statistical tests
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Goal of Cryptanalysis}
+\begin{itemize}
+  \item Cryptanalysis goal: find ``shortcut'' attacks on a system
+  \begin{itemize}
+    \item Attacks faster than generic brute force
+    \item Exploit non-random behavior of system
+  \end{itemize}
+  \item Our goal: prove / reason that such attacks are negligibly probable
+  \item Especially generic differential/linear and algebraic attacks
+  \begin{itemize}
+    \item Many (most?) attacks are derived from these
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Differential Cryptanalysis}
+\begin{itemize}
+  \item \emph{Difference}: $\Delta X = X' \oplus X''$
+  \item Feed $\Delta X$ through system and obtain output $\Delta Y$
+  \item \emph{Differential}: $(\Delta X, \Delta Y)$
+  \item Differentials have associated probabilities ($1/2^n$ for ideal system)
+  \item Exploit high (or low) probability differentials
+  \item First look at S-box
+  \item \emph{Active S-box}: S-box being estimated during an attack
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resistance to Differential Attacks}
+\begin{itemize}
+  \item Our S-box has max differential probability $p_{D,max} = 2^{-14}$
+  \begin{itemize}
+    \item Found using Kaminsky's analysis program
+  \end{itemize}
+  \item Our round has branch number $\mathcal{B}_D = 3$
+  \begin{itemize}
+    \item Minimum of $3$ active S-boxes across rounds
+  \end{itemize}
+  \item Probability of difference in either output: $p_{D,out} = 2^{-15}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resistance to Differential Attacks}
+\begin{itemize}
+  \item Worst-case probability of propagating difference over $2$ rounds
+  \begin{equation*}
+  (p_{D,max})^{\mathcal{B}_D} \cdot p_{D,out}
+  \end{equation*}
+  \vfill
+  \begin{center}
+  \begin{tabular}{c|c}
+  Rounds & Worse Case Differential Probability \\
+  \hline
+  $2$  & $2^{-57}$  \\
+  $4$  & $2^{-114}$ \\
+  $6$  & $2^{-171}$ \\
+  $8$  & $2^{-228}$ \\
+  $10$ & $2^{-285}$ \\
+  $12$ & $2^{-342}$ \\
+  $14$ & $2^{-399}$ \\
+  $16$ & $2^{-456}$ \\
+  \end{tabular}
+  \end{center}
+  \vfill
+  \item $R = 6$ sufficient for $128$-bit key
+  \item $R = 10$ sufficient for $256$-bit key
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Linear Cryptanalysis}
+\begin{itemize}
+  \item Similar to differential cryptanalysis in many ways
+  \item Estimate behavior of system using linear expressions
+  \begin{equation*}
+  \left( \bigoplus\limits_{i=1}^{16} X_i \right) = \left( \bigoplus\limits_{i=1}^{16} Y_i \right)
+  \end{equation*}
+  \item Ideal \emph{linear probability}: $p = 1/2$
+  \item Concerned with \emph{linear bias}: $\epsilon = p - 1/2$
+  \begin{itemize}
+    \item Deviation from ideal probability
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resistance to Linear Attacks}
+\begin{itemize}
+  \item Result: linear branch number = differential branch number
+  \begin{itemize}
+    \item Sufficient condition: mixer matrix is symmetric \cite{Daemen2002_DesignOfRijndael}
+  \end{itemize}
+  \item Our S-box has maximum linear bias: $\epsilon_{L,max} = 2^{-8}$
+  \item Combine biases of linearly active S-box using Piling-Up Lemma
+  \begin{equation*}
+  \epsilon = 2^{n-1} \prod\limits_{i = 1}^n \epsilon_i,
+  \end{equation*}
+  \item where $n = \mathcal{B}_L = 3$ and $\epsilon_i = \epsilon_{L,max} = 2^{-8}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resistance to Linear Attacks}
+\begin{itemize}
+  \item Matsui: \# PT/CT pairs needed is approximately $\epsilon^{-2}$ \cite{Matsui1993_Linear}
+  \vfill
+  \begin{center}
+  \begin{small}
+  \begin{tabular}{c|c|c}
+  Rounds & Worst Case Linear Bias & PT/CT Pairs Required \\
+  \hline
+  $2$  & $2^{-22}$  & $2^{44}$  \\
+  $4$  & $2^{-44}$  & $2^{88}$  \\
+  $6$  & $2^{-66}$  & $2^{132}$ \\
+  $8$  & $2^{-88}$  & $2^{176}$ \\
+  $10$ & $2^{-110}$ & $2^{220}$ \\
+  $12$ & $2^{-132}$ & $2^{264}$ \\
+  $14$ & $2^{-154}$ & $2^{308}$ \\
+  $16$ & $2^{-176}$ & $2^{352}$ \\
+  \end{tabular}
+  \end{small}
+  \end{center}
+  \item $R = 6$ sufficient for $128$-bit key
+  \item $R = 12$ sufficient for $256$-bit key
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Algebraic Attacks}
+\begin{itemize}
+  \item Unlike differential/linear attacks, not probabilistic in nature
+  \item Goal: find mathematical models of a system that are always true
+  \item Example: compact representation of AES by Ferguson et. al\ \cite{Ferguson2001_AlgebraicRijndael}
+  \item Initial raised huge alarm in cryptographic community
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resistance to Algebraic Attacks}
+\begin{itemize}
+  \item Finding models is ``easy''
+  \item Solving models is the problem
+  \item Models are necessarily highly nonlinear because of S-box
+  \item We're good at linear systems, so attempt to reduce to linear
+  \item So far, no practical attacks due to S-box complexity
+  \item Our S-box is even larger than AES with higher algebraic complexity
+  \item Conclusion: algebraic attacks extremely unlikely
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Statistical Testing}
+\begin{itemize}
+  \item Not a substitute for real cryptanalysis!
+  \item But can give insight into behavior
+  \item We used STS and manual avalanche testing
+  \item STS results: no statistical anomalies
+  \begin{itemize}
+    \item Similar to most AES candidates
+  \end{itemize}
+  \item Avalanche testing: full diffusion after 3 rounds
+\end{itemize}
+\end{frame}
+

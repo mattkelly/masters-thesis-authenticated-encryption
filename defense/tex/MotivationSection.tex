@@ -1,0 +1,151 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Section: Motivation
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% From here, start printing TOC before every section
+\section{Intro \& Motivation}
+\AtBeginSection[] {
+     \begin{frame}<beamer>
+     \frametitle{Overview}
+     \tableofcontents[currentsection]
+     \end{frame}
+}
+\begin{frame}
+\frametitle{Why Authenticate?}
+\begin{itemize}
+  \item Encryption without authentication is generally insecure
+  \item Several examples in recent history
+    \begin{itemize}
+      \item Wired Equivalence Privacy (WEP) in 2001 \cite{Borisov2001_WEP}
+      \item SSL, IPSEC, and others based on CBC mode in 2002 \cite{Vaudenay2002_CBC_Flaws}
+    \end{itemize}
+  \item Encryption provides \emph{confidentiality} only
+  \item Authentication is needed for \emph{data integrity} and assurance of message origin
+    \begin{itemize}
+      \item Detect tampering or corruption of data
+      \item Ensure message came from expected sender
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Authenticated Encryption}
+\begin{itemize}
+  \item Provide benefits of encryption and authentication in a single cryptographic primitive
+  \item Process plaintext and produce ciphertext and a Message Authentication Code (MAC)
+  \item AE is easy! Recipe:
+  \begin{enumerate}
+    \item One secure block cipher (e.g.\ AES)
+    \item One secure MAC generation function (e.g.\ HMAC)
+    \item Mash them together: Encrypt-then-MAC, MAC-then-Encrypt, or Encrypt-and-MAC 
+  \end{enumerate}
+  \item This na{\"i}ve approach is called \emph{generic composition}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Against Generic Composition}
+\begin{itemize}
+  \item Generic composition is far from ideal
+  \begin{itemize}
+    \item Two unique keys
+    \item Not easy to use / not misuse resistant
+    \item Inefficient
+  \end{itemize}
+  \item ``Good'' AE is more difficult to achieve
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Better AE}
+\begin{itemize}
+  \item Desirable properties of AE algorithms in general:
+  \begin{itemize}
+    \item Easy to use, since misuse can result in reduced security
+    \item Single key
+    \item Single pass
+    \item Support for Additional Authenticated Data (AAD / headers)
+    \item Support for intermediate tags (MACs)
+    \item No decryption mode requirement
+  \end{itemize}
+  \item Government and military have more stringent requirements
+  \begin{itemize}
+    \item Algorithms typically not in public domain
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{History of AE}
+\begin{itemize}
+  \item Jutla, 2000: Integrity Aware Cipher Block Chaining (IACBC) and Integrity Aware Parallelizable Mode (IAPM) \cite{Jutla2001_AE}
+  \begin{itemize}
+    \item Two keys, no support for AAD, highly patent encumbered
+  \end{itemize}
+  \vfill
+  \item Rogaway et al., 2001: Offset Codebook Mode (OCB) \cite{Rogaway2003_OCB}
+  \begin{itemize}
+    \item Requires decryption mode, patent encumbered
+  \end{itemize}
+  \vfill
+  \item Whiting et al., 2003: Counter with CBC-MAC (CCM) \cite{Whiting2003_CCM}
+  \begin{itemize}
+    \item Two passes, only 128-bit block support
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{History of AE}
+\begin{itemize}
+  \item Kohno et al., 2004: Carter-Wegman + Counter (CWC) \cite{Kohno2004_CWC}
+  \begin{itemize}
+    \item ``Two'' passes, prime field multiplication
+  \end{itemize}
+  \vfill
+  \item McGrew and Viega, 2004: Galois/Counter Mode (GCM) \cite{McGrew2004_GCM}
+  \begin{itemize}
+    \item ``Two'' passes, binary GF multiplication, very popular
+  \end{itemize}
+  \vfill
+  \item Bellare et al., 2004: EAX Mode \cite{Bellare2004_EAX}
+  \begin{itemize}
+    \item Two passes, slightly modified generic composition
+  \end{itemize}
+  \vfill
+  \item Whiting et al., 2005: Phelix \cite{Whiting2005_Phelix}
+  \begin{itemize}
+    \item Stream cipher based, broken by differential-linear attacks \cite{Wu2007_PhelixAttack}
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Present Day AE}
+\begin{itemize}
+  \item Sponge construction gaining popularity since \Keccak won SHA-3 in 2013
+  \item ``Duplexing'' the sponge provides \textbf{excellent} potential for efficient AE
+  \item ...which is why it has its own section
+  \item CAESAR Competition is ongoing
+  \begin{itemize}
+    \item First round out of three right now
+    \item Seven sponge-based AE algorithms
+    \item None customizable at an algorithmic level
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Contributions}
+\begin{itemize}
+  \item Secure AE algorithm based on the sponge (duplex) construction
+  \item Highly customizable within our security margin
+  \begin{itemize}
+    \item We provide the guidelines
+  \end{itemize}
+  \item Single key 
+  \item Single pass
+  \item Support for intermediate tags (MACs)
+  \item Support for 128- and 256-bit keys
+\end{itemize}
+\end{frame}
+

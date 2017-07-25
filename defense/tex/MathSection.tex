@@ -1,0 +1,138 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Section: Mathematical Foundations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Mathematical Foundations}
+\begin{frame}
+\frametitle{Groups}
+\begin{itemize}
+  \item Set of elements $G$ together with a binary operation $*$
+  \item Satisfies following properties:
+  \begin{enumerate}
+    \item \emph{Associativity}. $(a * b) * c = a * (b * c)$ for all $a, b, c \in G$.
+    \item \emph{Closure}. $a * b \in G$ for all $a, b \in G$.
+    \item \emph{Identity}. There exists an element $e \in G$ such that $a * e = e * a = a$ for all $a \in G$.  
+    \item \emph{Inverses}. For each $a \in G$ there exists $a^{-1} \in G$ such that $a * a^{-1} = a^{-1} * a = e$.
+  \end{enumerate}
+  \vfill
+  \item For \emph{abelian} groups, $a * b = b * a$ for all $a, b \in G$
+  \item Common example: $(\mathbb{Z}, +)$, the integers under addition
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Rings}
+\begin{itemize}
+  \item Set of elements $R$ together with two binary operations $\cdot$ and $+$
+  \item Call them multiplication and addition
+  \item Satisfies following properties:
+  \begin{enumerate}
+    \item $R$ is an abelian group under addition; its identity is called $0$.
+    \item \emph{Associativity}. Multiplication and addition are both associative. 
+    \item \emph{Distributivity}. $a(b+c) = ab + ac$ and $(b+c)a = ba + ca$ for all $a,b,c \in R$; multiplication distributes over addition
+  \end{enumerate}
+  \vfill
+  \item $R$ is abelian if multiplication also commutes
+  \item Common example: $(\mathbb{Z}, \cdot, +)$, the integers under addition and multiplication
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Fields}
+\begin{itemize}
+  \item Set of elements $\mathbb{F}$ together with two binary operations $\cdot$ and $+$
+  \item Satisfies following properties:
+  \begin{enumerate}
+    \item $\mathbb{F}$ is an abelian ring.
+    \item $\mathbb{F}$ is an abelian group under multiplication; its identity is called $1$.
+  \end{enumerate}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Galois Fields}
+\begin{itemize}
+  \item \emph{Order} of an algebraic structure is the number of elements it contains
+  \item Fields of finite order are called finite fields or \emph{Galois fields} (GFs)
+  \item Well-known result: all GFs are of prime power order
+  \item Denoted $\mathbb{F}_{p^k}$ or $\mathrm{GF}(p^k)$
+  \begin{itemize}
+    \item $p$: \emph{characteristic} of the GF
+    \item $k$: \emph{degree} of the GF
+  \end{itemize}
+  \item Order of an element $a$: smallest integer $k$ such that $a^k = e$
+  \item Lagrange: order of an element divides order of the structure
+  \item Cryptographers are mainly concerned with binary GFs ($p = 2$)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{GF Element Representations}
+\begin{itemize}
+  \item Elements in $\mathrm{GF}(p^k)$ can be represented as polynomials modulo $f(x)$
+  \item Where $f(x)$ is irreducible and $\mathrm{deg}(f(x)) = k$, and $\alpha_i \in \mathbb{Z}_p$
+  \begin{equation*}
+    a = \alpha_{k-1}x^{k-1} + \alpha_{k-2}x^{k-2} + \ldots + \alpha_1 x + \alpha_0
+  \end{equation*}
+  \item We also use binary (or hex) notation for binary GFs
+  \item Example of some element $a \in \mathrm{GF}(2^{16})$:
+  \begin{align*}
+    a &= x^{15} + x^3 + x^2 + 1 \\
+      &\equiv \mathrm{0b1000\_0000\_0000\_1101} \\
+      &\equiv \mathrm{0x800d}
+  \end{align*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{GF Operations}
+\begin{itemize}
+  \item Multiplication: multiply polynomials as usual, reduce if degree of result $> \mathrm{deg}(f(x))$
+  \begin{itemize}
+    \item Methods to optimize in software and hardware
+  \end{itemize}
+  \item Addition: element-wise addition modulo $p$
+  \begin{itemize}
+    \item For binary GF, $a + b \equiv a \mathrm{\ XOR\ } b$, denoted $a \oplus b$
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Bitstrings}
+\begin{itemize}
+  \item Bitstring is a binary string; i.e.\ string of elements in $\mathbb{Z}_2$
+  \item Example: $1011 \in \mathbb{Z}_2^4$
+  \item Ordinary boolean operations apply: bitwise XOR, AND, etc.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Transformations}
+\begin{itemize}
+  %\item Shannon formalized many notions including \emph{entropy} and \emph{uncertainty}
+  \item \emph{Transformation}: a function
+  \begin{equation*}
+    t \from X \to Y
+  \end{equation*}
+  \item \emph{Bijection}: one-to-one, onto transformation
+  \item Bijections are \emph{entropy-preserving}
+  \item \emph{Permutation}: bijection where domain $X$ and codomain $Y$ are equivalent
+  \item Permutations on $\mathbb{Z}_2^n$ are central to this work
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Confusion and Diffusion}
+\begin{itemize}
+  \item Shannon's notions of \emph{confusion} and \emph{diffusion} lay foundation for modern symmetric key cryptography
+  \item \emph{Confusion}: obscure relationship between plaintext and ciphertext
+  \begin{itemize}
+    \item Example: substitutions
+  \end{itemize}
+  \item \emph{Diffusion}: dissipate redundancy of plaintext throughout ciphertext 
+  \begin{itemize}
+    \item Example: bitwise permutations 
+  \end{itemize}
+\end{itemize}
+\end{frame}
+

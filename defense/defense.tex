@@ -1,0 +1,203 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Design and Cryptanalysis of a Customizable
+% Authenticated Encryption Algorithm
+% 
+% A Master's Thesis Defense
+%
+% Author: Matt Kelly (mjk7841@rit.edu)
+% Defended: August 1, 2014
+%
+% Thesis document available at:
+% github.com/mattkelly/masters-thesis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[11pt,american]{beamer}
+%\usefonttheme[onlymath]{serif}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage{subfigure}
+\usepackage{babel}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{verbatim}
+\usepackage{enumerate}
+\usepackage{afterpage}
+\usepackage[mathscr]{euscript}
+\usepackage{xcolor}   % For colored links
+\usepackage{hyperref} % For internal links
+\usepackage{nag}      % Warn about old packages and commands
+\usepackage{fixltx2e} % Fix misc. LaTeX stuff
+\usepackage{xspace}   % Fix spacing at end of macros
+\usepackage{array}
+\usepackage{etoolbox}
+\usepackage{multirow}
+\usepackage{rotating}
+\usepackage{listings}
+
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\setbeamertemplate{bibliography item}{[\theenumiv]}
+
+\lstset{%
+  basicstyle=\tiny,
+  frame=single
+}
+
+\setcounter{MaxMatrixCols}{16}
+
+\newenvironment{smallpmatrix}
+  {\left(\begin{smallmatrix}}
+  {\end{smallmatrix}\right)}
+
+% For now, to help organize
+\setcounter{tocdepth}{5}
+\newcommand{\TODO}{\textcolor{red}{\textbf{TODO}}\xspace}
+
+\usepackage{verbatim} % For block comments
+\usepackage{amssymb}  % http://ctan.org/pkg/amssymb
+\usepackage{pifont}   % http://ctan.org/pkg/pifont
+\usepackage{graphicx} % For images
+\usepackage{booktabs} % \toprule, \midrule, \bottomrule
+\usepackage{nag}      % Warn about old packages and commands
+\usepackage{fixltx2e} % Fix misc. LaTeX stuff
+\usepackage{multirow}
+\usepackage{rotating} 
+\usepackage{listings} % Code listings
+\usepackage{xspace}   % Fix spacing at end of macros
+\usepackage{array}
+\usepackage{etoolbox}
+\usepackage{lscape}
+\usepackage{verbatim}
+\usepackage{enumerate}
+
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\mode<presentation> {
+  \usetheme{CambridgeUS}
+  % Remove navigation symbols from slides
+  \setbeamertemplate{navigation symbols}{}
+}
+
+%\newcommand{\cmk}{\color{green}\ding{51}} % Check mark
+%\newcommand{\xmk}{\color{red}\ding{55}}   % X mark
+
+\newcommand{\Ztwo}{\ensuremath{\mathbb{Z}_2}\xspace}
+\newcommand{\Zn}{\ensuremath{\mathbb{Z}_n}\xspace}
+\newcommand{\gftwo}{\ensuremath{\mathrm{GF}(2)}\xspace}
+\newcommand{\gfsixteen}{\ensuremath{\mathrm{GF}(2^{16})}\xspace}
+\newcommand{\ourpoly}{\ensuremath{x^{16} + x^5 + x^3 + x^2 + 1}\xspace}
+\newcommand{\gfwithpoly}{\ensuremath{\text{GF}(2^{16}) / \left\langle \ourpoly \right\rangle}\xspace}
+
+%\newcommand{\pval}{\ensuretext{P\text{-}value}\xspace}
+%\newcommand{\pvals}{\ensuretext{P\text{-}values}\xspace}
+\newcommand{\pval}{\textit{P-value}\xspace}
+\newcommand{\pvals}{\textit{P-values}\xspace}
+
+\newcommand{\Keccak}{\textsc{Keccak}\xspace}
+\newcommand{\SpongeWrap}{\textsc{SpongeWrap}\xspace}
+
+\newcommand{\drawxTimes}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (1em and 1em) node {$x*$};
+}
+\newcommand{\drawXOR}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (1em and 1em);
+  \draw[line width=2.5pt] (#1-.4, #2) -- (#1+.4, #2);
+  \draw[line width=2.5pt] (#1, #2-.4) -- (#1, #2+.4);
+}
+\newcommand{\drawAdder}[2]{% top left: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) rectangle (#1+1, #2-1);
+  \draw[line width=2.5pt] (#1, #2-.5) -- (#1+1, #2-.5);
+  \draw[line width=2.5pt] (#1+.5, #2-1) -- (#1+.5, #2);
+}
+\newcommand{\drawRot}[2]{% center: x,y
+  \draw[fill=gray!15,line width=2.5pt] (#1, #2) ellipse (2em and 1em) node {$\mathbf{ROT}$};
+}
+\newcommand{\drawMixerInputs}{
+  \draw[fill=gray!30] (0,16) rectangle (2,15) node[midway] {$A$};
+  \draw[fill=gray!30] (4,16) rectangle (6,15) node[midway] {$B$};
+}
+\newcommand{\drawMixerOutputs}[1]{%y offset from top
+  \draw[fill=gray!30] (0,16-#1) rectangle (2,15-#1) node[midway] {$A'$};
+  \draw[fill=gray!30] (4,16-#1) rectangle (6,15-#1) node[midway] {$B'$};
+}
+
+% Aliases for readability
+\let\from=\colon
+\let\to=\rightarrow
+
+% The short title appears at the bottom of every slide, the full title is only on the title page
+\title[Customizable AE Algorithm]
+{Design and Cryptanalysis of a Customizable Authenticated Encryption Algorithm}
+\subtitle{A Master's Thesis Defense}
+
+\author{Matthew J. Kelly} % Name
+% TODO this is a huge hack...
+\institute[RIT] {
+Rochester Institute of Technology \\ % Institution for the title page
+\medskip
+\emph{mjk7841@rit.edu} % Email
+\vspace{1em}
+
+Supervised by \\
+\smallskip
+Alan Kaminsky, \emph{Primary Advisor} \\
+Marcin {\L}ukowiak, \emph{Primary Advisor} \\
+Michael Kurdziel, \emph{Advisor} \\
+Reza Azarderakhsh, \emph{Advisor} \\
+\smallskip
+Stanis{\l}aw Radziszowski, \emph{Team Member} \\
+\medskip
+\large
+August 1, 2014
+}
+\date{August 1, 2014}
+
+\begin{document}
+%------------------------------------------------
+% TITLE SLIDE
+%------------------------------------------------
+\begin{frame}
+  \titlepage
+\end{frame}
+
+%------------------------------------------------
+% TABLE OF CONTENTS
+%------------------------------------------------
+\begin{frame}
+  \frametitle{Overview}
+  \tableofcontents[hideallsubsections]
+\end{frame}
+
+%------------------------------------------------
+% PRESENTATION SLIDES
+%------------------------------------------------
+\input{tex/MotivationSection.tex}
+\input{tex/MathSection.tex}
+\input{tex/SpongeAndDuplexSection.tex}
+\input{tex/AlgorithmSpecSection.tex}
+\input{tex/CryptanalysisSection.tex}
+\input{tex/ConclusionSection.tex}
+
+\begin{frame}
+\frametitle{Questions}
+\begin{center}
+\Huge ?
+\end{center}
+\end{frame}
+
+%------------------------------------------------
+% BIBLIOGRAPHY
+%------------------------------------------------
+\section*{Bibliography}
+\begin{frame}[allowframebreaks]
+\frametitle{Bibliography}
+\tiny
+\bibliographystyle{plain}
+\bibliography{defense}
+\end{frame}
+
+\end{document}
+
